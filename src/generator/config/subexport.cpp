@@ -2746,8 +2746,6 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 proxy.AddMember("auth_str", rapidjson::StringRef(x.Auth.c_str()), allocator);  
   
                 // 处理 up_mbps (必填)  
-                std::string search = " Mbps";  // 需要添加这行  
-  
                 if (!x.UpMbps.empty()) {  
                     if (isNumeric(x.UpMbps)) {  
                         proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
