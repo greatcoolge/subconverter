@@ -2700,7 +2700,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                         proxy.AddMember("transport", vlesstransport, allocator);  
                         break;  
               
-                    case "h2"_hash:  
+                    case "httpupgrade"_hash:  // HTTPUpgrade 独立协议  
                         vlesstransport.AddMember("type", rapidjson::StringRef("httpupgrade"), allocator);  
                         if (!x.Host.empty())  
                             vlesstransport.AddMember("host", rapidjson::StringRef(x.Host.c_str()), allocator);  
