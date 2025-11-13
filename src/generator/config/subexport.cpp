@@ -2592,20 +2592,31 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
 
         rapidjson::Value proxy(rapidjson::kObjectType);
         switch (x.Type) {
-            case ProxyType::Shadowsocks: {
-                addSingBoxCommonMembers(proxy, x, "shadowsocks", allocator);
-                proxy.AddMember("method", rapidjson::StringRef(x.EncryptMethod.c_str()), allocator);
-                proxy.AddMember("password", rapidjson::StringRef(x.Password.c_str()), allocator);
-                if (!x.Plugin.empty() && !x.PluginOption.empty()) {
-                    if (x.Plugin == "simple-obfs")
-                        x.Plugin = "obfs-local";
-                    if (x.Plugin != "obfs-local" && x.Plugin != "v2ray-plugin") {
-                        continue;
-                    }
-                    proxy.AddMember("plugin", rapidjson::StringRef(x.Plugin.c_str()), allocator);
-                    proxy.AddMember("plugin_opts", rapidjson::StringRef(x.PluginOption.c_str()), allocator);
-                }
-                break;
+            case ProxyType::Shadowsocks: {  
+                addSingBoxCommonMembers(proxy, x, "shadowsocks", allocator);  
+      
+                // 必填字段  
+                proxy.AddMember("method", rapidjson::StringRef(x.EncryptMethod.c_str()), allocator);  
+                proxy.AddMember("password", rapidjson::StringRef(x.Password.c_str()), allocator);  
+      
+                // 插件配置(可选)  
+                if (!x.Plugin.empty() && !x.PluginOption.empty()) {  
+                    std::string plugin = x.Plugin;  
+          
+                    // 插件名称转换  
+                    if (plugin == "simple-obfs")  
+                        plugin = "obfs-local";  
+          
+                    // 如果插件不支持,跳过整个节点  
+                    if (plugin != "obfs-local" && plugin != "v2ray-plugin") {  
+                        continue;  // 跳过当前节点,不添加到配置中  
+                    }  
+          
+                    proxy.AddMember("plugin", rapidjson::StringRef(plugin.c_str()), allocator);  
+                    proxy.AddMember("plugin_opts", rapidjson::StringRef(x.PluginOption.c_str()), allocator);  
+                }  
+      
+                break;  
             }
             //            case ProxyType::ShadowsocksR: {
             //                addSingBoxCommonMembers(proxy, x, "shadowsocksr", allocator);
