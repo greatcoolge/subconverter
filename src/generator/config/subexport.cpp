@@ -2794,7 +2794,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 proxy.AddMember("tls", tls, allocator);  
   
                 // 可选字段  
-                if (!x.FakeType.empty()) {  
+                if (!x.FakeType.empty() && x.FakeType != "none") {  
                     proxy.AddMember("network", rapidjson::StringRef(x.FakeType.c_str()), allocator);  
                 }  
   
