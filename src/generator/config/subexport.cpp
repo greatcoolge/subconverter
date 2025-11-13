@@ -2623,6 +2623,10 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 proxy.AddMember("alter_id", x.AlterId, allocator);
                 proxy.AddMember("security", rapidjson::StringRef(x.EncryptMethod.c_str()), allocator);
 
+                // 添加 packet_encoding 支持  
+                if (!x.PacketEncoding.empty()) {  
+                    proxy.AddMember("packet_encoding", rapidjson::StringRef(x.PacketEncoding.c_str()), allocator);  
+                }
                 auto transport = buildSingBoxTransport(x, allocator);
                 if (!transport.ObjectEmpty())
                     proxy.AddMember("transport", transport, allocator);
