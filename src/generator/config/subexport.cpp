@@ -2689,6 +2689,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                         break;  
               
                     case "http"_hash:  
+                    case "h2"_hash:  // h2 也映射到 http 类型
                         vlesstransport.AddMember("type", rapidjson::StringRef("http"), allocator);  
                         if (!x.Host.empty())  
                             vlesstransport.AddMember("host", rapidjson::StringRef(x.Host.c_str()), allocator);  
