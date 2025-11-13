@@ -2827,6 +2827,11 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 if (!x.Alpn.empty()) {  
                     auto alpns = stringArrayToJsonArray(x.Alpn, ",", allocator);  
                     tls.AddMember("alpn", alpns, allocator);  
+                } else {  
+                    // Hysteria 默认使用 h3  
+                    rapidjson::Value alpns(rapidjson::kArrayType);  
+                    alpns.PushBack(rapidjson::StringRef("h3"), allocator);  // ✅ 使用 StringRef  
+                    tls.AddMember("alpn", alpns, allocator);  
                 }  
       
                 if (!x.PublicKey.empty()) {  
@@ -2837,33 +2842,38 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 if (!scv.is_undef()) {  
                     tls.AddMember("insecure", scv.get(), allocator);  
                 } else {  
-                    tls.AddMember("insecure", !x.TLSSecure, allocator);  
+                    tls.AddMember("insecure", false, allocator);  // 默认安全  
+                    // tls.AddMember("insecure", !x.TLSSecure, allocator);  
                 }  
       
                 proxy.AddMember("tls", tls, allocator);  
       
                 // 带宽处理  
                 if (!x.UpMbps.empty()) {  
-                    if (!isNumeric(x.UpMbps)) {  
-                        std::string search = " Mbps";  
+                    if (isNumeric(x.UpMbps)) {  
+                        proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
+                    } else {  
                         size_t pos = x.UpMbps.find(search);  
-                        if (pos != std::string::npos) {  
+                        if (pos != std::string::npos)  
                             x.UpMbps.replace(pos, search.length(), "");  
-                        }  
+                        proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
                     }  
-                    proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
+                } else {  
+                    proxy.AddMember("up_mbps", 100, allocator);  // 默认值  
                 }  
-      
+  
                 if (!x.DownMbps.empty()) {  
-                    if (!isNumeric(x.DownMbps)) {  
-                        std::string search = " Mbps";  
+                    if (isNumeric(x.DownMbps)) {  
+                        proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
+                    } else {  
                         size_t pos = x.DownMbps.find(search);  
-                        if (pos != std::string::npos) {  
+                        if (pos != std::string::npos)  
                             x.DownMbps.replace(pos, search.length(), "");  
-                        }  
+                        proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
                     }  
-                    proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
-                }  
+                } else {  
+                    proxy.AddMember("down_mbps", 100, allocator);  // 默认值  
+                }
       
                 // OBFS 配置  
                 if (!x.OBFSParam.empty()) {  
