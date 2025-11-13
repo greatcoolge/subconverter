@@ -2848,25 +2848,28 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
       
                 proxy.AddMember("tls", tls, allocator);  
       
-                // 带宽处理  
-                if (!x.UpMbps.empty()) {  
-                    if (!isNumeric(x.UpMbps)) {  
-                        size_t pos = x.UpMbps.find(search);  // 直接使用函数作用域的 search  
-                        if (pos != std::string::npos) {  
-                            x.UpMbps.replace(pos, search.length(), "");  
-                        }  
-                    }  
-                    proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
-                }  
-  
-                if (!x.DownMbps.empty()) {  
-                    if (!isNumeric(x.DownMbps)) {  
-                        size_t pos = x.DownMbps.find(search);  // 直接使用函数作用域的 search  
-                        if (pos != std::string::npos) {  
-                            x.DownMbps.replace(pos, search.length(), "");  
-                        }  
-                    }  
-                    proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
+                // 上行带宽
+                if (!x.UpMbps.empty()) {
+                    if (!isNumeric(x.UpMbps)) {
+                        size_t pos = x.UpMbps.find(search);
+                        if (pos != std::string::npos)
+                            x.UpMbps.replace(pos, search.length(), "");
+                    }
+                    try {
+                        proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);
+                    } catch (const std::exception&) { }
+                }
+
+                // 下行带宽
+                if (!x.DownMbps.empty()) {
+                    if (!isNumeric(x.DownMbps)) {
+                        size_t pos = x.DownMbps.find(search);
+                        if (pos != std::string::npos)
+                            x.DownMbps.replace(pos, search.length(), "");
+                    }
+                    try {
+                        proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);
+                    } catch (const std::exception&) { }
                 }
       
                 // OBFS 配置  
