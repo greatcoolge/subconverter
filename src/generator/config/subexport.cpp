@@ -2746,30 +2746,34 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 proxy.AddMember("auth_str", rapidjson::StringRef(x.Auth.c_str()), allocator);  
   
                 // 处理 up_mbps (必填)  
+                std::string search = " Mbps";  // 需要添加这行  
+  
                 if (!x.UpMbps.empty()) {  
                     if (isNumeric(x.UpMbps)) {  
                         proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
                     } else {  
                         size_t pos = x.UpMbps.find(search);  
-                        if (pos != std::string::npos) {  
+                        if (pos != std::string::npos)  
                             x.UpMbps.replace(pos, search.length(), "");  
-                        }  
                         proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
                     }  
+                } else {  
+                    proxy.AddMember("up_mbps", 100, allocator);  // 默认值  
                 }  
   
-                // 处理 down_mbps (必填)  
                 if (!x.DownMbps.empty()) {  
                     if (isNumeric(x.DownMbps)) {  
                         proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
                     } else {  
                         size_t pos = x.DownMbps.find(search);  
-                        if (pos != std::string::npos) {  
+                        if (pos != std::string::npos)  
                             x.DownMbps.replace(pos, search.length(), "");  
-                        }  
                         proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
                     }  
-                }  
+                } else {  
+                    proxy.AddMember("down_mbps", 100, allocator);  // 默认值  
+                }
+                  
   
                 // 始终添加 TLS 配置  
                 rapidjson::Value tls(rapidjson::kObjectType);  
@@ -2788,7 +2792,8 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 if (!scv.is_undef()) {  
                     tls.AddMember("insecure", scv.get(), allocator);  
                 } else {  
-                    tls.AddMember("insecure", !x.TLSSecure, allocator);  
+                    tls.AddMember("insecure", false, allocator);  // 默认安全
+                    // tls.AddMember("insecure", !x.TLSSecure, allocator);  
                 }  
   
                 proxy.AddMember("tls", tls, allocator);  
