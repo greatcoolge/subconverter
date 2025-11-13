@@ -24,14 +24,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       # 3️⃣ 切换到 main 并拉取最新
-      - name: Checkout main branch
+      - name: Checkout  master branch
         run: |
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
+          git fetch origin  master
+          git checkout  master
+          git reset --hard origin/ master
 
       # 4️⃣ 合并 dev 分支，但不提交
-      - name: Merge dev into main (no commit)
+      - name: Merge dev into  master (no commit)
         run: git merge --no-commit --no-ff dev
 
       # 5️⃣ 排除 workflow 文件
@@ -43,10 +43,10 @@ jobs:
       # 6️⃣ 提交剩余代码
       - name: Commit changes
         run: |
-          git commit -m "Sync dev code into main without workflows" || echo "No changes to commit"
+          git commit -m "Sync dev code into  master without workflows" || echo "No changes to commit"
 
       # 7️⃣ 推送到 main
-      - name: Push to main
-        run: git push origin main
+      - name: Push to  master
+        run: git push origin  master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
