@@ -2626,6 +2626,8 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 // 添加 packet_encoding 支持  
                 if (!x.PacketEncoding.empty()) {  
                     proxy.AddMember("packet_encoding", rapidjson::StringRef(x.PacketEncoding.c_str()), allocator);  
+                } else if (xudp && udp) {  
+                    proxy.AddMember("packet_encoding", rapidjson::StringRef("xudp"), allocator);  
                 }
                 auto transport = buildSingBoxTransport(x, allocator);
                 if (!transport.ObjectEmpty())
