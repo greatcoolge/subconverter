@@ -2804,51 +2804,70 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
   
                 break;  
             }
-            case ProxyType::Hysteria2: {
-                addSingBoxCommonMembers(proxy, x, "hysteria2", allocator);
-                proxy.AddMember("password", rapidjson::StringRef(x.Password.c_str()), allocator);
-                if (!x.TLSSecure) {
-                    rapidjson::Value tls(rapidjson::kObjectType);
-                    tls.AddMember("enabled", true, allocator);
-                    if (!x.ServerName.empty())
-                        tls.AddMember("server_name", rapidjson::StringRef(x.ServerName.c_str()), allocator);
-                    if (!x.Alpn.empty()) {
-                        auto alpns = stringArrayToJsonArray(x.Alpn, ",", allocator);
-                        tls.AddMember("alpn", alpns, allocator);
-                    }
-                    if (!x.PublicKey.empty()) {
-                        tls.AddMember("certificate", rapidjson::StringRef(x.PublicKey.c_str()), allocator);
-                    }
-                    tls.AddMember("insecure", buildBooleanValue(scv), allocator);
-                    proxy.AddMember("tls", tls, allocator);
-                }
-                if (!x.UpMbps.empty()) {
-                    if (!isNumeric(x.UpMbps)) {
-                        size_t pos = x.UpMbps.find(search);
-                        if (pos != std::string::npos) {
-                            x.UpMbps.replace(pos, search.length(), "");
-                        }
-                    }
-                    proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);
-                }
-                if (!x.DownMbps.empty()) {
-                    if (!isNumeric(x.DownMbps)) {
-                        size_t pos = x.DownMbps.find(search);
-                        if (pos != std::string::npos) {
-                            x.DownMbps.replace(pos, search.length(), "");
-                        }
-                    }
-                    proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);
-                }
-                if (!x.OBFSParam.empty()) {
-                    rapidjson::Value obfs(rapidjson::kObjectType);
-                    obfs.AddMember("type", rapidjson::StringRef(x.OBFSParam.c_str()), allocator);
-                    if (!x.OBFSPassword.empty()) {
-                        obfs.AddMember("password", rapidjson::StringRef(x.OBFSPassword.c_str()), allocator);
-                    }
-                    proxy.AddMember("obfs", obfs, allocator);
-                }
-                break;
+            case ProxyType::Hysteria2: {  
+                addSingBoxCommonMembers(proxy, x, "hysteria2", allocator);  
+                proxy.AddMember("password", rapidjson::StringRef(x.Password.c_str()), allocator);  
+      
+                // 始终添加 TLS 配置 (Hysteria2 强制要求 TLS)  
+                rapidjson::Value tls(rapidjson::kObjectType);  
+                tls.AddMember("enabled", true, allocator);  
+      
+                if (!x.ServerName.empty()) {  
+                    tls.AddMember("server_name", rapidjson::StringRef(x.ServerName.c_str()), allocator);  
+                }  
+      
+                if (!x.Alpn.empty()) {  
+                    auto alpns = stringArrayToJsonArray(x.Alpn, ",", allocator);  
+                    tls.AddMember("alpn", alpns, allocator);  
+                }  
+      
+                if (!x.PublicKey.empty()) {  
+                    tls.AddMember("certificate", rapidjson::StringRef(x.PublicKey.c_str()), allocator);  
+                }  
+      
+                // 根据 scv 或 TLSSecure 决定 insecure  
+                if (!scv.is_undef()) {  
+                    tls.AddMember("insecure", scv.get(), allocator);  
+                } else {  
+                    tls.AddMember("insecure", !x.TLSSecure, allocator);  
+                }  
+      
+                proxy.AddMember("tls", tls, allocator);  
+      
+                // 带宽处理  
+                if (!x.UpMbps.empty()) {  
+                    if (!isNumeric(x.UpMbps)) {  
+                        std::string search = " Mbps";  
+                        size_t pos = x.UpMbps.find(search);  
+                        if (pos != std::string::npos) {  
+                            x.UpMbps.replace(pos, search.length(), "");  
+                        }  
+                    }  
+                    proxy.AddMember("up_mbps", std::stoi(x.UpMbps), allocator);  
+                }  
+      
+                if (!x.DownMbps.empty()) {  
+                    if (!isNumeric(x.DownMbps)) {  
+                        std::string search = " Mbps";  
+                        size_t pos = x.DownMbps.find(search);  
+                        if (pos != std::string::npos) {  
+                            x.DownMbps.replace(pos, search.length(), "");  
+                        }  
+                    }  
+                    proxy.AddMember("down_mbps", std::stoi(x.DownMbps), allocator);  
+                }  
+      
+                // OBFS 配置  
+                if (!x.OBFSParam.empty()) {  
+                    rapidjson::Value obfs(rapidjson::kObjectType);  
+                    obfs.AddMember("type", rapidjson::StringRef(x.OBFSParam.c_str()), allocator);  
+                    if (!x.OBFSPassword.empty()) {  
+                        obfs.AddMember("password", rapidjson::StringRef(x.OBFSPassword.c_str()), allocator);  
+                    }  
+                    proxy.AddMember("obfs", obfs, allocator);  
+                }  
+      
+                break;  
             }
             case ProxyType::TUIC: {
                 addSingBoxCommonMembers(proxy, x, "tuic", allocator);
