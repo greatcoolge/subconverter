@@ -2786,6 +2786,11 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 if (!x.Alpn.empty()) {  
                     auto alpns = stringArrayToJsonArray(x.Alpn, ",", allocator);  
                     tls.AddMember("alpn", alpns, allocator);  
+                } else {  
+                    // Hysteria 默认使用 h3  
+                    rapidjson::Value alpns(rapidjson::kArrayType);  
+                    alpns.PushBack(rapidjson::StringRef("h3"), allocator);  // ✅ 使用 StringRef  
+                    tls.AddMember("alpn", alpns, allocator);  
                 }  
   
                 // 根据 scv 或 TLSSecure 决定 insecure  
