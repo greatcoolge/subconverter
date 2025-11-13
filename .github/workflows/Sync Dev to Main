@@ -1,0 +1,52 @@
+name: Sync Dev to Main Without Workflows
+
+on:
+  workflow_dispatch:      # 手动触发
+  push:
+    branches:
+      - dev               # dev 分支有 push 时也可以触发
+
+jobs:
+  sync_to_main:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ 检出仓库
+      - name: Checkout dev branch
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0   # 获取完整历史，便于 merge
+
+      # 2️⃣ 设置 Git 用户
+      - name: Set Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 3️⃣ 切换到 main 并拉取最新
+      - name: Checkout main branch
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+
+      # 4️⃣ 合并 dev 分支，但不提交
+      - name: Merge dev into main (no commit)
+        run: git merge --no-commit --no-ff dev
+
+      # 5️⃣ 排除 workflow 文件
+      - name: Exclude workflows
+        run: |
+          git restore --staged .github/workflows || true
+          git checkout -- .github/workflows || true
+
+      # 6️⃣ 提交剩余代码
+      - name: Commit changes
+        run: |
+          git commit -m "Sync dev code into main without workflows" || echo "No changes to commit"
+
+      # 7️⃣ 推送到 main
+      - name: Push to main
+        run: git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
