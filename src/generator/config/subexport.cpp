@@ -2632,58 +2632,85 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                     proxy.AddMember("transport", transport, allocator);
                 break;
             }
-            case ProxyType::VLESS: {
-                addSingBoxCommonMembers(proxy, x, "vless", allocator);
-                proxy.AddMember("uuid", rapidjson::StringRef(x.UserId.c_str()), allocator);
-                if (xudp && udp)
-                    proxy.AddMember("packet_encoding", rapidjson::StringRef("xudp"), allocator);
-                if (!x.Flow.empty())
-                    proxy.AddMember("flow", rapidjson::StringRef(x.Flow.c_str()), allocator);
-                if (!x.PacketEncoding.empty()) {
-                    proxy.AddMember("packet_encoding", rapidjson::StringRef(x.PacketEncoding.c_str()), allocator);
-                }
-                rapidjson::Value vlesstransport(rapidjson::kObjectType);
-                rapidjson::Value vlessheaders(rapidjson::kObjectType);
-                switch (hash_(x.TransferProtocol)) {
-                    case "tcp"_hash:
-                        break;
-                    case "ws"_hash:
-                        if (x.Path.empty())
-                            vlesstransport.AddMember("path", "/", allocator);
-                        else
-                            vlesstransport.AddMember("path", rapidjson::StringRef(x.Path.c_str()), allocator);
-                        if (!x.Host.empty())
-                            vlessheaders.AddMember("Host", rapidjson::StringRef(x.Host.c_str()), allocator);
-                        if (!x.Edge.empty())
-                            vlessheaders.AddMember("Edge", rapidjson::StringRef(x.Edge.c_str()), allocator);
-                        vlesstransport.AddMember("type", rapidjson::StringRef("ws"), allocator);
-                        addHeaders(vlesstransport, x, allocator);
-                        proxy.AddMember("transport", vlesstransport, allocator);
-                        break;
-                    case "http"_hash:
-                        vlesstransport.AddMember("type", rapidjson::StringRef("http"), allocator);
-                        vlesstransport.AddMember("host", rapidjson::StringRef(x.Host.c_str()), allocator);
-                        vlesstransport.AddMember("method", rapidjson::StringRef("GET"), allocator);
-                        vlesstransport.AddMember("path", rapidjson::StringRef(x.Path.c_str()), allocator);
-                        addHeaders(vlesstransport, x, allocator);
-                        proxy.AddMember("transport", vlesstransport, allocator);
-                        break;
-                    case "h2"_hash:
-                        vlesstransport.AddMember("type", rapidjson::StringRef("httpupgrade"), allocator);
-                        vlesstransport.AddMember("host", rapidjson::StringRef(x.Host.c_str()), allocator);
-                        vlesstransport.AddMember("path", rapidjson::StringRef(x.Path.c_str()), allocator);
-                        proxy.AddMember("transport", vlesstransport, allocator);
-                        break;
-                    case "grpc"_hash:
-                        vlesstransport.AddMember("type", rapidjson::StringRef("grpc"), allocator);
-                        vlesstransport.AddMember("service_name", rapidjson::StringRef(x.GRPCServiceName.c_str()),
-                                                 allocator);
-                        proxy.AddMember("transport", vlesstransport, allocator);
-                        break;
-                    default:
-                        continue;
-                }
-                break;
+            case ProxyType::VLESS: {  
+                addSingBoxCommonMembers(proxy, x, "vless", allocator);  
+      
+                // 必填字段  
+                proxy.AddMember("uuid", rapidjson::StringRef(x.UserId.c_str()), allocator);  
+      
+                // flow 字段(可选)  
+                if (!x.Flow.empty())  
+                    proxy.AddMember("flow", rapidjson::StringRef(x.Flow.c_str()), allocator);  
+      
+                // packet_encoding 字段(可选,优先使用用户配置)  
+                if (!x.PacketEncoding.empty()) {  
+                    proxy.AddMember("packet_encoding", rapidjson::StringRef(x.PacketEncoding.c_str()), allocator);  
+                } else if (xudp && udp) {  
+                    proxy.AddMember("packet_encoding", rapidjson::StringRef("xudp"), allocator);  
+                }  
+      
+                // 传输层配置  
+                rapidjson::Value vlesstransport(rapidjson::kObjectType);  
+                switch (hash_(x.TransferProtocol)) {  
+                    case "tcp"_hash:  
+                        // TCP 不需要额外的 transport 配置  
+                        break;  
+              
+                    case "ws"_hash:  
+                        vlesstransport.AddMember("type", rapidjson::StringRef("ws"), allocator);  
+                        vlesstransport.AddMember("path",   
+                            rapidjson::StringRef(x.Path.empty() ? "/" : x.Path.c_str()),   
+                            allocator);  
+              
+                        // 添加 headers  
+                        if (!x.Host.empty() || !x.Edge.empty()) {  
+                            rapidjson::Value headers(rapidjson::kObjectType);  
+                            if (!x.Host.empty())  
+                                headers.AddMember("Host", rapidjson::StringRef(x.Host.c_str()), allocator);  
+                            if (!x.Edge.empty())  
+                                headers.AddMember("Edge", rapidjson::StringRef(x.Edge.c_str()), allocator);  
+                            vlesstransport.AddMember("headers", headers, allocator);  
+                        }  
+              
+                        proxy.AddMember("transport", vlesstransport, allocator);  
+                        break;  
+              
+                    case "http"_hash:  
+                        vlesstransport.AddMember("type", rapidjson::StringRef("http"), allocator);  
+                        if (!x.Host.empty())  
+                            vlesstransport.AddMember("host", rapidjson::StringRef(x.Host.c_str()), allocator);  
+                        vlesstransport.AddMember("method", rapidjson::StringRef("GET"), allocator);  
+                        if (!x.Path.empty())  
+                            vlesstransport.AddMember("path", rapidjson::StringRef(x.Path.c_str()), allocator);  
+              
+                        addHeaders(vlesstransport, x, allocator);  
+                        proxy.AddMember("transport", vlesstransport, allocator);  
+                        break;  
+              
+                    case "h2"_hash:  
+                        vlesstransport.AddMember("type", rapidjson::StringRef("httpupgrade"), allocator);  
+                        if (!x.Host.empty())  
+                            vlesstransport.AddMember("host", rapidjson::StringRef(x.Host.c_str()), allocator);  
+                        if (!x.Path.empty())  
+                            vlesstransport.AddMember("path", rapidjson::StringRef(x.Path.c_str()), allocator);  
+                        proxy.AddMember("transport", vlesstransport, allocator);  
+                        break;  
+              
+                    case "grpc"_hash:  
+                        vlesstransport.AddMember("type", rapidjson::StringRef("grpc"), allocator);  
+                        if (!x.GRPCServiceName.empty())  
+                            vlesstransport.AddMember("service_name",   
+                                rapidjson::StringRef(x.GRPCServiceName.c_str()),   
+                                allocator);  
+                        proxy.AddMember("transport", vlesstransport, allocator);  
+                        break;  
+              
+                    default:  
+                        // 未知的传输协议,跳过  
+                        break;  
+                }  
+      
+                break;  
             }
             case ProxyType::Trojan: {
                 addSingBoxCommonMembers(proxy, x, "trojan", allocator);
