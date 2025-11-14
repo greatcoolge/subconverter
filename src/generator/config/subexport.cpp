@@ -2640,9 +2640,6 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 } else if (xudp && udp) {  
                     proxy.AddMember("packet_encoding", rapidjson::StringRef("xudp"), allocator);  
                 }
-                // 添加 network 字段  
-                if (!x.FakeType.empty())  
-                    proxy.AddMember("network", rapidjson::StringRef(x.FakeType.c_str()), allocator); 
                 
                 auto transport = buildSingBoxTransport(x, allocator);
                 if (!transport.ObjectEmpty())
@@ -2659,9 +2656,6 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 if (!x.Flow.empty())  
                     proxy.AddMember("flow", rapidjson::StringRef(x.Flow.c_str()), allocator);  
       
-                // 添加 network 字段  
-                if (!x.FakeType.empty())  
-                    proxy.AddMember("network", rapidjson::StringRef(x.FakeType.c_str()), allocator);
                 
                 // packet_encoding 字段(可选,优先使用用户配置)  
                 if (!x.PacketEncoding.empty()) {  
