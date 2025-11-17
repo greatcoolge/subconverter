@@ -3300,7 +3300,7 @@ void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
             regFind(sub, pattern)) {
             pattern = "\"?(outbounds)\"?:";
             if (regFind(sub, pattern)) {
-                pattern = "\"?(route)\"?:";
+                pattern = "\"route\"\\s*:";
                 if (regFind(sub, pattern)) {
                     rapidjson::Document document;
                     document.Parse(sub.c_str());
