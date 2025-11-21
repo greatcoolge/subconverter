@@ -595,12 +595,12 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                         Proxy node;
                         if (p == "vless") {
                             vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
-                                           net, cipher, flow, mode, path, host, edge, tls,
+                                           net, encryption, flow, mode, path, host, edge, tls,
                                            pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,
                                            tls13, "", tribool());
                         } else { // vmess
                             vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
-                                           net, cipher, path, host, edge, tls, "", alpnList, udp, tfo, scv,
+                                           net, cipher, path, host, edge, tls, sni, alpnList, udp, tfo, scv,
                                            tls13, "");
                         }
 
