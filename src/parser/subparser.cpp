@@ -390,8 +390,8 @@ void explodeVmess(std::string vmess, Proxy &node) {
 void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {  
     Document json;  
     rapidjson::Value nodejson, settings;  
-      
-    // 声明所有需要的变量  
+  
+    // 公共变量  
     std::string group, ps, add, port, type, id, aid, net, path, host, edge, tls, cipher, subid, sni;  
     std::string protocol, flow, encryption, pbk, sid, fp, mode, packet_encoding;  
     std::vector<std::string> alpnList;  
@@ -401,243 +401,275 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     std::map<std::string, std::string> subdata;  
     std::map<std::string, std::string>::iterator iter;  
     std::string streamset = "streamSettings", tcpset = "tcpSettings", wsset = "wsSettings";  
-      
+  
     regGetMatch(content, "((?i)streamsettings)", 2, 0, &streamset);  
     regGetMatch(content, "((?i)tcpsettings)", 2, 0, &tcpset);  
     regGetMatch(content, "((?i)wssettings)", 2, 0, &wsset);  
-      
+  
     json.Parse(content.data());  
     if (json.HasParseError() || !json.IsObject())  
         return;  
-      
+  
+    auto trimLower = [](std::string s) -> std::string {  
+        const char *ws = " \t\r\n";  
+        size_t start = s.find_first_not_of(ws);  
+        if (start == std::string::npos) return "";  
+        size_t end = s.find_last_not_of(ws);  
+        s = s.substr(start, end - start + 1);  
+        std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });  
+        return s;  
+    };  
+  
     try {  
-        // 处理 outbounds[0] (单配置)  
-        if (json.HasMember("outbounds")) {  
-            if (json["outbounds"].Size() > 0 &&   
-                json["outbounds"][0].HasMember("settings") &&  
-                json["outbounds"][0]["settings"].HasMember("vnext") &&  
-                json["outbounds"][0]["settings"]["vnext"].Size() > 0) {  
-                  
-                Proxy node;  
-                nodejson = json["outbounds"][0];  
-                  
+        // 先解析 subItem  
+        if (json.HasMember("subItem") && json["subItem"].IsArray()) {  
+            for (uint32_t i = 0; i < json["subItem"].Size(); i++) {  
+                if (json["subItem"][i].HasMember("id") && json["subItem"][i].HasMember("remarks")) {  
+                    subdata.insert({json["subItem"][i]["id"].GetString(),  
+                                    json["subItem"][i]["remarks"].GetString()});  
+                }  
+            }  
+        }  
+  
+        // 解析 outbounds 数组  
+        if (json.HasMember("outbounds") && json["outbounds"].IsArray()) {  
+            for (rapidjson::SizeType oi = 0; oi < json["outbounds"].Size(); ++oi) {  
+                nodejson = json["outbounds"][oi];  
+                if (!nodejson.HasMember("settings") || !nodejson["settings"].IsObject()) continue;  
+                auto &settingsRoot = nodejson["settings"];  
+                if (!settingsRoot.HasMember("vnext") || !settingsRoot["vnext"].IsArray()) continue;  
+  
                 protocol = GetMember(nodejson, "protocol");  
-                  
-                add = GetMember(nodejson["settings"]["vnext"][0], "address");  
-                port = GetMember(nodejson["settings"]["vnext"][0], "port");  
-                if (port == "0")  
-                    return;  
-                  
-                if (nodejson["settings"]["vnext"][0]["users"].Size()) {  
-                    id = GetMember(nodejson["settings"]["vnext"][0]["users"][0], "id");  
-                    aid = GetMember(nodejson["settings"]["vnext"][0]["users"][0], "alterId");  
-                    cipher = GetMember(nodejson["settings"]["vnext"][0]["users"][0], "security");  
-                      
-                    // VLESS 专属字段  
-                    if (protocol == "vless") {  
-                        flow = GetMember(nodejson["settings"]["vnext"][0]["users"][0], "flow");  
-                        encryption = GetMember(nodejson["settings"]["vnext"][0]["users"][0], "encryption");  
-                    }  
-                }  
-                  
-                if (nodejson.HasMember(streamset.data())) {  
-                    net = GetMember(nodejson[streamset.data()], "network");  
-                    tls = GetMember(nodejson[streamset.data()], "security");  
-                      
-                    // 解析 ALPN 列表  
-                    if (nodejson[streamset.data()].HasMember("tlsSettings")) {  
-                        rapidjson::Value &tlsSettings = nodejson[streamset.data()]["tlsSettings"];  
-                        if (tlsSettings.HasMember("alpn") && tlsSettings["alpn"].IsArray()) {  
-                            for (auto &item : tlsSettings["alpn"].GetArray()) {  
-                                if (item.IsString())  
-                                    alpnList.emplace_back(item.GetString());  
-                            }  
-                        }  
-                        sni = GetMember(tlsSettings, "serverName");  
-                    }  
-                      
-                    // Reality 配置解析  
-                    if (tls == "reality" && nodejson[streamset.data()].HasMember("realitySettings")) {  
-                        rapidjson::Value &reality = nodejson[streamset.data()]["realitySettings"];  
-                        pbk = GetMember(reality, "publicKey");  
-                        sid = GetMember(reality, "shortId");  
-                        fp = GetMember(reality, "fingerprint");  
-                        if (reality.HasMember("serverName") && reality["serverName"].IsString())  
-                            sni = reality["serverName"].GetString();  
-                        tls = "reality";  
-                    }  
-                      
-                    // 传输协议配置  
-                    if (net == "ws") {  
-                        if (nodejson[streamset.data()].HasMember(wsset.data()))  
-                            settings = nodejson[streamset.data()][wsset.data()];  
-                        else  
-                            settings.RemoveAllMembers();  
+                auto p = trimLower(protocol);  
+                if (p != "vmess" && p != "vless") continue;  
+  
+                for (rapidjson::SizeType vi = 0; vi < settingsRoot["vnext"].Size(); ++vi) {  
+                    auto &serverInfo = settingsRoot["vnext"][vi];  
+                    add = GetMember(serverInfo, "address");  
+                    port = GetMember(serverInfo, "port");  
+                    if (port == "0" || add.empty()) continue;  
+                    if (!serverInfo.HasMember("users") || !serverInfo["users"].IsArray() || serverInfo["users"].Empty())  
+                        continue;  
+  
+                    for (rapidjson::SizeType ui = 0; ui < serverInfo["users"].Size(); ++ui) {  
+                        auto &user = serverInfo["users"][ui];  
                           
-                        path = GetMember(settings, "path");  
-                        if (settings.HasMember("headers")) {  
-                            host = GetMember(settings["headers"], "Host");  
-                            edge = GetMember(settings["headers"], "Edge");  
+                        // 清空所有变量  
+                        id = GetMember(user, "id");  
+                        cipher.clear();  
+                        aid.clear();  
+                        flow.clear();  
+                        encryption.clear();  
+                        mode.clear();  
+                        net.clear();  
+                        path.clear();  
+                        host.clear();  
+                        edge.clear();  
+                        tls.clear();  
+                        sni.clear();  
+                        pbk.clear();  
+                        sid.clear();  
+                        fp.clear();  
+                        alpnList.clear();  
+                        type.clear();  
+                        packet_encoding.clear();  
+  
+                        if (p == "vmess") {  
+                            aid = GetMember(user, "alterId");  
+                            cipher = GetMember(user, "security");  
+                            if (cipher.empty()) cipher = "auto";  
+                        } else {  
+                            flow = GetMember(user, "flow");  
+                            encryption = GetMember(user, "encryption");  
+                            if (encryption.empty()) encryption = "none";  
                         }  
-                    }  
-                    else if (net == "grpc" && nodejson[streamset.data()].HasMember("grpcSettings")) {  
-                        rapidjson::Value &grpcSettings = nodejson[streamset.data()]["grpcSettings"];  
-                        path = GetMember(grpcSettings, "serviceName");  
-                        mode = GetMember(grpcSettings, "mode");  
-                        host = sni.empty() ? add : sni;  
-                    }  
-                    else if (net == "h2" && nodejson[streamset.data()].HasMember("httpSettings")) {  
-                        rapidjson::Value &httpSettings = nodejson[streamset.data()]["httpSettings"];  
-                        path = GetMember(httpSettings, "path");  
-                        if (httpSettings.HasMember("host") && httpSettings["host"].IsArray() &&   
-                            httpSettings["host"].Size() > 0) {  
-                            host = httpSettings["host"][0].GetString();  
-                        }  
-                    }  
-                    else if (net == "quic" && nodejson[streamset.data()].HasMember("quicSettings")) {  
-                        rapidjson::Value &quicSettings = nodejson[streamset.data()]["quicSettings"];  
-                        host = GetMember(quicSettings, "security");  
-                        path = GetMember(quicSettings, "key");  
-                        if (quicSettings.HasMember("header") && quicSettings["header"].IsObject()) {  
-                            type = GetMember(quicSettings["header"], "type");  
-                        }  
-                    }  
-                      
-                    // TCP 配置  
-                    if (nodejson[streamset.data()].HasMember(tcpset.data()))  
-                        settings = nodejson[streamset.data()][tcpset.data()];  
-                    else  
-                        settings.RemoveAllMembers();  
-                      
-                    if (settings.IsObject() && settings.HasMember("header")) {  
-                        type = GetMember(settings["header"], "type");  
-                        if (type == "http" && settings["header"].HasMember("request")) {  
-                            if (settings["header"]["request"].HasMember("path") &&  
-                                settings["header"]["request"]["path"].Size())  
-                                settings["header"]["request"]["path"][0] >> path;  
-                              
-                            if (settings["header"]["request"].HasMember("headers")) {  
-                                host = GetMember(settings["header"]["request"]["headers"], "Host");  
-                                edge = GetMember(settings["header"]["request"]["headers"], "Edge");  
+  
+                        // 解析 streamSettings  
+                        if (nodejson.HasMember(streamset.c_str()) && nodejson[streamset.c_str()].IsObject()) {  
+                            auto &stream = nodejson[streamset.c_str()];  
+                            net = GetMember(stream, "network");  
+                            tls = GetMember(stream, "security");  
+  
+                            // ALPN  
+                            if (stream.HasMember("tlsSettings") && stream["tlsSettings"].IsObject()) {  
+                                auto &tlsSettings = stream["tlsSettings"];  
+                                if (tlsSettings.HasMember("alpn") && tlsSettings["alpn"].IsArray()) {  
+                                    for (auto &item : tlsSettings["alpn"].GetArray())  
+                                        if (item.IsString()) alpnList.emplace_back(item.GetString());  
+                                }  
+                                sni = GetMember(tlsSettings, "serverName");  
+                            }  
+  
+                            // Reality  
+                            if (trimLower(tls) == "reality" && stream.HasMember("realitySettings")) {  
+                                auto &reality = stream["realitySettings"];  
+                                pbk = GetMember(reality, "publicKey");  
+                                sid = GetMember(reality, "shortId");  
+                                fp = GetMember(reality, "fingerprint");  
+                                if (reality.HasMember("serverName") && reality["serverName"].IsString())  
+                                    sni = reality["serverName"].GetString();  
+                                tls = "reality";  
+                            }  
+  
+                            // Packet Encoding  
+                            if (stream.HasMember("packetEncoding") && stream["packetEncoding"].IsString()) {  
+                                packet_encoding = stream["packetEncoding"].GetString();  
+                            }  
+  
+                            // 传输协议  
+                            std::string netLower = trimLower(net);  
+                            if (netLower == "ws") {  
+                                if (stream.HasMember(wsset.c_str()) && stream[wsset.c_str()].IsObject())  
+                                    settings = stream[wsset.c_str()];  
+                                else  
+                                    settings.RemoveAllMembers();  
+                                path = GetMember(settings, "path");  
+                                if (settings.HasMember("headers") && settings["headers"].IsObject()) {  
+                                    host = GetMember(settings["headers"], "Host");  
+                                    edge = GetMember(settings["headers"], "Edge");  
+                                }  
+                            } else if (netLower == "grpc" && stream.HasMember("grpcSettings")) {  
+                                auto &grpcSettings = stream["grpcSettings"];  
+                                path = GetMember(grpcSettings, "serviceName");  
+                                mode = GetMember(grpcSettings, "mode");  
+                                host = sni.empty() ? add : sni;  
+                            } else if (netLower == "h2" && stream.HasMember("httpSettings")) {  
+                                auto &httpSettings = stream["httpSettings"];  
+                                path = GetMember(httpSettings, "path");  
+                                if (httpSettings.HasMember("host") && httpSettings["host"].IsArray() && httpSettings["host"].Size())  
+                                    host = httpSettings["host"][0].GetString();  
+                            } else if (netLower == "quic" && stream.HasMember("quicSettings")) {  
+                                auto &quicSettings = stream["quicSettings"];  
+                                host = GetMember(quicSettings, "security");  
+                                path = GetMember(quicSettings, "key");  
+                                if (quicSettings.HasMember("header") && quicSettings["header"].IsObject())  
+                                    type = GetMember(quicSettings["header"], "type");  
+                            }  
+  
+                            // TCP Header  
+                            if (stream.HasMember(tcpset.c_str()) && stream[tcpset.c_str()].IsObject())  
+                                settings = stream[tcpset.c_str()];  
+                            else  
+                                settings.RemoveAllMembers();  
+  
+                            if (settings.IsObject() && settings.HasMember("header") && settings["header"].IsObject()) {  
+                                type = GetMember(settings["header"], "type");  
+                                if (type == "http" && settings["header"].HasMember("request") && settings["header"]["request"].IsObject()) {  
+                                    if (settings["header"]["request"].HasMember("path") && settings["header"]["request"]["path"].Size())  
+                                        settings["header"]["request"]["path"][0] >> path;  
+                                    if (settings["header"]["request"].HasMember("headers") && settings["header"]["request"]["headers"].IsObject()) {  
+                                        host = GetMember(settings["header"]["request"]["headers"], "Host");  
+                                        edge = GetMember(settings["header"]["request"]["headers"], "Edge");  
+                                    }  
+                                }  
                             }  
                         }  
+  
+                        // 默认值  
+                        if (mode.empty() && trimLower(net) == "grpc") mode = "gun";  
+                        if (type.empty()) type = "none";  
+                        if (net.empty()) net = "tcp";  
+  
+                        // 构造节点  
+                        Proxy node;  
+                        if (p == "vless") {  
+                            vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
+                                           net, encryption, flow, mode, path, host, edge, tls,  
+                                           pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,  
+                                           tls13, "", tribool());  
+                        } else {  
+                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
+                                           net, cipher, path, host, edge, tls, sni, alpnList, udp, tfo, scv,  
+                                           tls13, "");  
+                        }  
+                        node.Id = index++;  
+                        nodes.emplace_back(std::move(node));  
                     }  
                 }  
-                  
-                // 设置默认值  
-                if (encryption.empty()) encryption = "none";  
-                if (mode.empty() && net == "grpc") mode = "gun";  
-                  
-                // 根据协议类型构造节点  
-                if (protocol == "vless") {  
-                    vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
-                                   net, encryption, flow, mode, path, host, edge, tls,  
-                                   pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,  
-                                   tls13, "", tribool());  
-                } else {  
-                    vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
-                                   net, cipher, path, host, edge, tls, sni, alpnList, udp, tfo, scv,  
-                                   tls13, "");  
+            }  
+        }  
+  
+        // 解析 vmess 数组  
+        if (json.HasMember("vmess") && json["vmess"].IsArray()) {  
+            for (uint32_t i = 0; i < json["vmess"].Size(); i++) {  
+                Proxy node;  
+                auto &entry = json["vmess"][i];  
+                if (entry["address"].IsNull() || entry["port"].IsNull() || entry["id"].IsNull()) continue;  
+  
+                entry["remarks"] >> ps;  
+                entry["address"] >> add;  
+                port = GetMember(entry, "port");  
+                if (port == "0") continue;  
+                entry["subid"] >> subid;  
+  
+                if (!subid.empty()) {  
+                    iter = subdata.find(subid);  
+                    if (iter != subdata.end()) group = iter->second;  
                 }  
-                  
+                if (ps.empty()) ps = add + ":" + port;  
+  
+                scv = GetMember(entry, "allowInsecure");  
+                entry["configType"] >> configType;  
+  
+                switch (configType) {  
+                    case 1: // vmess  
+                        entry["headerType"] >> type;  
+                        entry["id"] >> id;  
+                        entry["alterId"] >> aid;  
+                        entry["network"] >> net;  
+                        entry["path"] >> path;  
+                        entry["requestHost"] >> host;  
+                        entry["streamSecurity"] >> tls;  
+                        entry["security"] >> cipher;  
+                        entry["sni"] >> sni;  
+                        vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, path, host, "",  
+                                       tls, sni, std::vector<std::string>{}, udp, tfo, scv, tls13, "");  
+                        break;  
+                    case 2: // vless  
+                        entry["headerType"] >> type;  
+                        entry["id"] >> id;  
+                        entry["alterId"] >> aid;  
+                        entry["network"] >> net;  
+                        entry["path"] >> path;  
+                        entry["requestHost"] >> host;  
+                        entry["streamSecurity"] >> tls;  
+                        entry["security"] >> cipher;  
+                        entry["sni"] >> sni;  
+                        entry["flow"] >> flow;  
+  
+                        if (trimLower(tls) == "reality") {  
+                            entry["publicKey"] >> pbk;  
+                            entry["shortId"] >> sid;  
+                            entry["fingerprint"] >> fp;  
+                        }  
+  
+                        if (cipher.empty()) cipher = "none";  
+                        if (mode.empty() && trimLower(net) == "grpc") mode = "gun";  
+  
+                        vlessConstruct(node, XRAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, flow, mode,  
+                                       path, host, "", tls, pbk, sid, fp, sni, std::vector<std::string>{}, packet_encoding,  
+                                       udp, tfo, scv, tls13, "", tribool());  
+                        break;  
+                    case 3: // ss  
+                        entry["id"] >> id;  
+                        entry["security"] >> cipher;  
+                        ssConstruct(node, SS_DEFAULT_GROUP, ps, add, port, id, cipher, "", "", udp, tfo, scv);  
+                        break;  
+                    case 4: // socks  
+                        socksConstruct(node, SOCKS_DEFAULT_GROUP, ps, add, port, "", "", udp, tfo, scv);  
+                        break;  
+                    default:  
+                        continue;  
+                }  
                 node.Id = index++;  
                 nodes.emplace_back(std::move(node));  
             }  
-            return;  
         }  
     } catch (std::exception &e) {  
         writeLog(LOG_TYPE_ERROR, e.what(), LOG_LEVEL_ERROR);  
         throw;  
     }  
-      
-    // 处理 subItem 映射  
-    for (uint32_t i = 0; i < json["subItem"].Size(); i++)  
-        subdata.insert(std::pair<std::string, std::string>(json["subItem"][i]["id"].GetString(),  
-                                                           json["subItem"][i]["remarks"].GetString()));  
-      
-    // 处理 vmess 数组  
-    for (uint32_t i = 0; i < json["vmess"].Size(); i++) {  
-        Proxy node;  
-        if (json["vmess"][i]["address"].IsNull() || json["vmess"][i]["port"].IsNull() ||  
-            json["vmess"][i]["id"].IsNull())  
-            continue;  
-          
-        json["vmess"][i]["remarks"] >> ps;  
-        json["vmess"][i]["address"] >> add;  
-        port = GetMember(json["vmess"][i], "port");  
-        if (port == "0")  
-            continue;  
-        json["vmess"][i]["subid"] >> subid;  
-          
-        if (!subid.empty()) {  
-            iter = subdata.find(subid);  
-            if (iter != subdata.end())  
-                group = iter->second;  
-        }  
-        if (ps.empty())  
-            ps = add + ":" + port;  
-          
-        scv = GetMember(json["vmess"][i], "allowInsecure");  
-        json["vmess"][i]["configType"] >> configType;  
-          
-        switch (configType) {  
-            case 1: // vmess config  
-                json["vmess"][i]["headerType"] >> type;  
-                json["vmess"][i]["id"] >> id;  
-                json["vmess"][i]["alterId"] >> aid;  
-                json["vmess"][i]["network"] >> net;  
-                json["vmess"][i]["path"] >> path;  
-                json["vmess"][i]["requestHost"] >> host;  
-                json["vmess"][i]["streamSecurity"] >> tls;  
-                json["vmess"][i]["security"] >> cipher;  
-                json["vmess"][i]["sni"] >> sni;  
-                vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, path, host, "",  
-                               tls, sni, std::vector<std::string>{}, udp, tfo, scv, tls13, "");  
-                break;  
-            case 2: // vless config  
-                json["vmess"][i]["headerType"] >> type;  
-                json["vmess"][i]["id"] >> id;  
-                json["vmess"][i]["alterId"] >> aid;  
-                json["vmess"][i]["network"] >> net;  
-                json["vmess"][i]["path"] >> path;  
-                json["vmess"][i]["requestHost"] >> host;  
-                json["vmess"][i]["streamSecurity"] >> tls;  
-                json["vmess"][i]["security"] >> cipher;  
-                json["vmess"][i]["sni"] >> sni;  
-                json["vmess"][i]["flow"] >> flow;  
-                  
-                // Reality 配置  
-                if (tls == "reality") {  
-                    json["vmess"][i]["publicKey"] >> pbk;  
-                    json["vmess"][i]["shortId"] >> sid;  
-                    json["vmess"][i]["fingerprint"] >> fp;  
-                }  
-                  
-                // 设置默认值  
-                if (cipher.empty()) cipher = "none";  
-                if (mode.empty() && net == "grpc") mode = "gun";  
-                  
-                vlessConstruct(node, XRAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, flow, mode,  
-                               path, host, "", tls, pbk, sid, fp, sni, std::vector<std::string>{}, packet_encoding,  
-                               udp, tfo, scv, tls13, "", tribool());  
-                break;  
-            case 3: // ss config  
-                json["vmess"][i]["id"] >> id;  
-                json["vmess"][i]["security"] >> cipher;  
-                ssConstruct(node, SS_DEFAULT_GROUP, ps, add, port, id, cipher, "", "", udp, tfo, scv);  
-                break;  
-            case 4: // socks config  
-                socksConstruct(node, SOCKS_DEFAULT_GROUP, ps, add, port, "", "", udp, tfo, scv);  
-                break;  
-            default:  
-                continue;  
-        }  
-        node.Id = index;  
-        nodes.emplace_back(std::move(node));  
-        index++;  
-    }  
 }
-
 
 void explodeSS(std::string ss, Proxy &node) {
     std::string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP,
