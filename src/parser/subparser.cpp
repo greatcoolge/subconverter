@@ -388,15 +388,8 @@ void explodeVmess(std::string vmess, Proxy &node) {
 }
 
 void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
-void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     Document json;
-    rapidjson::Value nodejson, settings;
-
-    std::string group, ps, add, port, type, id, aid, net, path, host, edge, tls, cipher, subid, sni;
-    std::string protocol, flow, encryption, pbk, sid, fp, mode, packet_encoding;
-    std::vector<std::string> alpnList;
-    tribool udp, tfo, scv, tls13;
-    int configType;
+    rapidjson::Value settings;
     uint32_t index = nodes.size();
     std::map<std::string, std::string> subdata;
     std::map<std::string, std::string>::iterator iter;
@@ -407,8 +400,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     regGetMatch(content, "((?i)wssettings)", 2, 0, &wsset);
 
     json.Parse(content.data());
-    if (json.HasParseError() || !json.IsObject())
-        return;
+    if (json.HasParseError() || !json.IsObject()) return;
 
     auto trim = [](std::string s) -> std::string {
         const char *ws = " \t\r\n";
@@ -423,22 +415,18 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     };
 
     try {
-        // 处理 outbounds
+        // 遍历 outbounds
         if (json.HasMember("outbounds") && json["outbounds"].IsArray()) {
             const rapidjson::Value &outs = json["outbounds"];
             for (rapidjson::SizeType oi = 0; oi < outs.Size(); ++oi) {
                 if (!outs[oi].IsObject()) continue;
                 const rapidjson::Value &out = outs[oi];
-
                 if (!out.HasMember("settings") || !out["settings"].IsObject()) continue;
                 const rapidjson::Value &settingsRoot = out["settings"];
 
-                protocol.clear();
-                if (out.HasMember("protocol") && out["protocol"].IsString())
-                    protocol = out["protocol"].GetString();
+                std::string protocol = GetMember(out, "protocol");
                 std::string p = toLower(trim(protocol));
                 if (p.empty()) continue;
-
                 if (!settingsRoot.HasMember("vnext") || !settingsRoot["vnext"].IsArray()) continue;
                 const rapidjson::Value &vnext = settingsRoot["vnext"];
 
@@ -446,26 +434,22 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                     if (!vnext[vi].IsObject()) continue;
                     const rapidjson::Value &serverInfo = vnext[vi];
 
-                    add = GetMember(serverInfo, "address");
-                    port = GetMember(serverInfo, "port");
+                    std::string add = GetMember(serverInfo, "address");
+                    std::string port = GetMember(serverInfo, "port");
                     if (port == "0" || add.empty()) continue;
-
                     if (!serverInfo.HasMember("users") || !serverInfo["users"].IsArray() || serverInfo["users"].Empty())
                         continue;
 
                     const rapidjson::Value &users = serverInfo["users"];
                     for (rapidjson::SizeType ui = 0; ui < users.Size(); ++ui) {
                         if (!users[ui].IsObject()) continue;
-
-                        id.clear(); aid.clear(); cipher.clear(); flow.clear(); encryption.clear();
-                        net.clear(); path.clear(); host.clear(); edge.clear(); tls.clear();
-                        pbk.clear(); sid.clear(); fp.clear(); sni.clear();
-                        alpnList.clear(); type.clear(); mode.clear(); packet_encoding.clear();
-                        udp = tfo = scv = tls13 = tribool();
-
                         const rapidjson::Value &user = users[ui];
 
-                        id = GetMember(user, "id");
+                        // 重置字段
+                        std::string id = GetMember(user, "id");
+                        std::string aid, cipher, encryption, flow, mode, net, path, host, edge, tls, pbk, sid, fp, sni;
+                        std::vector<std::string> alpnList;
+                        tribool udp, tfo, scv, tls13;
 
                         if (p == "vmess") {
                             aid = GetMember(user, "alterId");
@@ -484,12 +468,12 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                             if (stream.HasMember("tlsSettings") && stream["tlsSettings"].IsObject()) {
                                 const rapidjson::Value &tlsSettings = stream["tlsSettings"];
                                 if (tlsSettings.HasMember("alpn") && tlsSettings["alpn"].IsArray()) {
-                                    for (auto &item : tlsSettings["alpn"].GetArray()) {
+                                    for (auto &item : tlsSettings["alpn"].GetArray())
                                         if (item.IsString()) alpnList.emplace_back(item.GetString());
-                                    }
                                 }
                             }
 
+                            // Reality 特殊处理
                             if (toLower(trim(tls)) == "reality" && stream.HasMember("realitySettings") && stream["realitySettings"].IsObject()) {
                                 const rapidjson::Value &reality = stream["realitySettings"];
                                 pbk = GetMember(reality, "publicKey");
@@ -497,6 +481,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                 fp = GetMember(reality, "fingerprint");
                                 sni = GetMember(reality, "serverName");
                                 tls = "reality";
+                                host = sni.empty() ? add : sni;
                             }
 
                             std::string netLower = toLower(trim(net));
@@ -505,7 +490,6 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                     settings = stream[wsset.c_str()];
                                 else
                                     settings.RemoveAllMembers();
-
                                 path = GetMember(settings, "path");
                                 if (settings.HasMember("headers") && settings["headers"].IsObject()) {
                                     host = GetMember(settings["headers"], "Host");
@@ -515,38 +499,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                 const rapidjson::Value &grpcSettings = stream["grpcSettings"];
                                 path = GetMember(grpcSettings, "serviceName");
                                 mode = GetMember(grpcSettings, "mode");
-                                host = sni.empty() ? add : sni;
-                            } else if (netLower == "h2" && stream.HasMember("httpSettings") && stream["httpSettings"].IsObject()) {
-                                const rapidjson::Value &httpSettings = stream["httpSettings"];
-                                path = GetMember(httpSettings, "path");
-                                if (httpSettings.HasMember("host") && httpSettings["host"].IsArray() && httpSettings["host"].Size() > 0) {
-                                    host = httpSettings["host"][0].GetString();
-                                }
-                            } else if (netLower == "quic" && stream.HasMember("quicSettings") && stream["quicSettings"].IsObject()) {
-                                const rapidjson::Value &quicSettings = stream["quicSettings"];
-                                host = GetMember(quicSettings, "security");
-                                path = GetMember(quicSettings, "key");
-                                if (quicSettings.HasMember("header") && quicSettings["header"].IsObject()) {
-                                    type = GetMember(quicSettings["header"], "type");
-                                }
-                            }
-
-                            if (stream.HasMember(tcpset.c_str()) && stream[tcpset.c_str()].IsObject())
-                                settings = stream[tcpset.c_str()];
-                            else
-                                settings.RemoveAllMembers();
-
-                            if (settings.IsObject() && settings.HasMember("header") && settings["header"].IsObject()) {
-                                type = GetMember(settings["header"], "type");
-                                if (type == "http" && settings["header"].HasMember("request") && settings["header"]["request"].IsObject()) {
-                                    const rapidjson::Value &request = settings["header"]["request"];
-                                    if (request.HasMember("path") && request["path"].IsArray() && request["path"].Size())
-                                        request["path"][0] >> path;
-                                    if (request.HasMember("headers") && request["headers"].IsObject()) {
-                                        host = GetMember(request["headers"], "Host");
-                                        edge = GetMember(request["headers"], "Edge");
-                                    }
-                                }
+                                host = host.empty() ? (sni.empty() ? add : sni) : host;
                             }
                         }
 
