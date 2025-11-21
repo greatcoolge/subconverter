@@ -550,15 +550,15 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
   
                         // 构造节点  
                         Proxy node;  
-                        if (p == "vless") {  
-                            vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
+                        if (p == "vmess") {  
+                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
+                                           net, cipher, path, host, edge, tls, sni,  
+                                           alpnList, udp, tfo, scv, tls13, "");  // alpnList 在 sni 之后  
+                        } else { // vless  
+                             vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
                                            net, encryption, flow, mode, path, host, edge, tls,  
                                            pbk, sid, fp, sni, alpnList, packet_encoding,  
                                            udp, tfo, scv, tls13, "", tribool());  
-                        } else { // vmess  
-                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
-                                           net, cipher, path, host, edge, tls, sni, alpnList,  
-                                           udp, tfo, scv, tls13, "");  
                         }  
   
                         node.Id = index++;  
@@ -623,7 +623,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                         entry["security"] >> cipher;  
                         entry["sni"] >> sni;  
                         vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, path, host, "",  
-                                       tls, sni, std::vector<std::string>{}, udp, tfo, scv, tls13, "");  // ✅ 添加 tls13 和 ""  
+                                       tls, sni, std::vector<std::string>{}, udp, tfo, scv, tls13, "");  
                         break;  
                     case 2: // vless  
                         entry["headerType"] >> type;  
