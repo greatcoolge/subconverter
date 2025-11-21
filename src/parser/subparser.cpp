@@ -388,10 +388,10 @@ void explodeVmess(std::string vmess, Proxy &node) {
 }
 
 void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
+void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     Document json;
     rapidjson::Value nodejson, settings;
 
-    // 原有变量 + VLESS / Reality 变量
     std::string group, ps, add, port, type, id, aid, net, path, host, edge, tls, cipher, subid, sni;
     std::string protocol, flow, encryption, pbk, sid, fp, mode, packet_encoding;
     std::vector<std::string> alpnList;
@@ -404,13 +404,12 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
 
     regGetMatch(content, "((?i)streamsettings)", 2, 0, &streamset);
     regGetMatch(content, "((?i)tcpsettings)", 2, 0, &tcpset);
-    regGetMatch(content, "((?i)wssettings)", 2, 0, &wsset);  // 修复正则表达式
+    regGetMatch(content, "((?i)wssettings)", 2, 0, &wsset);
 
     json.Parse(content.data());
     if (json.HasParseError() || !json.IsObject())
         return;
 
-    // 辅助函数
     auto trim = [](std::string s) -> std::string {
         const char *ws = " \t\r\n";
         size_t start = s.find_first_not_of(ws);
@@ -424,95 +423,64 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     };
 
     try {
-        // ----------------------------
-        // 处理 outbounds（遍历所有条目）
-        // ----------------------------
+        // 处理 outbounds
         if (json.HasMember("outbounds") && json["outbounds"].IsArray()) {
             const rapidjson::Value &outs = json["outbounds"];
             for (rapidjson::SizeType oi = 0; oi < outs.Size(); ++oi) {
                 if (!outs[oi].IsObject()) continue;
                 const rapidjson::Value &out = outs[oi];
 
-                if (!out.HasMember("settings") || !out["settings"].IsObject()) {
-                    // 可能有其他类型的 outbound（比如 direct/fallback），跳过
-                    continue;
-                }
+                if (!out.HasMember("settings") || !out["settings"].IsObject()) continue;
                 const rapidjson::Value &settingsRoot = out["settings"];
 
-                // protocol 必须直接从 outbound 取
                 protocol.clear();
-                if (out.HasMember("protocol") && out["protocol"].IsString()) {
+                if (out.HasMember("protocol") && out["protocol"].IsString())
                     protocol = out["protocol"].GetString();
-                }
                 std::string p = toLower(trim(protocol));
-                if (p.empty()) {
-                    writeLog(LOG_TYPE_WARNING, "explodeVmessConf: outbound protocol empty at index " + std::to_string(oi), LOG_LEVEL_INFO);
-                    continue;
-                }
+                if (p.empty()) continue;
 
-                // 只处理 vmess / vless（其他协议交给其它逻辑）
-                if (p != "vmess" && p != "vless") {
-                    continue;
-                }
-
-                // vnext 必须存在
                 if (!settingsRoot.HasMember("vnext") || !settingsRoot["vnext"].IsArray()) continue;
                 const rapidjson::Value &vnext = settingsRoot["vnext"];
 
-                // 遍历每个 vnext（支持多服务器）
                 for (rapidjson::SizeType vi = 0; vi < vnext.Size(); ++vi) {
                     if (!vnext[vi].IsObject()) continue;
                     const rapidjson::Value &serverInfo = vnext[vi];
 
-                    // 基本地址端口
                     add = GetMember(serverInfo, "address");
                     port = GetMember(serverInfo, "port");
                     if (port == "0" || add.empty()) continue;
 
-                    // users 必须存在并为数组
-                    if (!serverInfo.HasMember("users") || !serverInfo["users"].IsArray() || serverInfo["users"].Empty()) {
-                        writeLog(LOG_TYPE_DEBUG, "explodeVmessConf: no users for vnext entry at out=" + std::to_string(oi) + ", vnext=" + std::to_string(vi), LOG_LEVEL_INFO);
+                    if (!serverInfo.HasMember("users") || !serverInfo["users"].IsArray() || serverInfo["users"].Empty())
                         continue;
-                    }
-                    const rapidjson::Value &users = serverInfo["users"];
 
-                    // 遍历每个 user（支持多个用户）
+                    const rapidjson::Value &users = serverInfo["users"];
                     for (rapidjson::SizeType ui = 0; ui < users.Size(); ++ui) {
                         if (!users[ui].IsObject()) continue;
-                        const rapidjson::Value &user = users[ui];
 
-                        // 清理临时变量，避免残留
                         id.clear(); aid.clear(); cipher.clear(); flow.clear(); encryption.clear();
                         net.clear(); path.clear(); host.clear(); edge.clear(); tls.clear();
                         pbk.clear(); sid.clear(); fp.clear(); sni.clear();
                         alpnList.clear(); type.clear(); mode.clear(); packet_encoding.clear();
                         udp = tfo = scv = tls13 = tribool();
 
-                        // 通用字段
+                        const rapidjson::Value &user = users[ui];
+
                         id = GetMember(user, "id");
 
-                        // 协议专属字段，严格分离（不要互相污染）
                         if (p == "vmess") {
                             aid = GetMember(user, "alterId");
                             cipher = GetMember(user, "security");
-                            // 为兼容某些配置，允许 vless 字段存在但不使用
                         } else if (p == "vless") {
                             flow = GetMember(user, "flow");
                             encryption = GetMember(user, "encryption");
-                            // 不读取 alterId/security 作为判定依据
-                        } else {
-                            // already filtered, but safe-guard
-                            continue;
-                        }
+                        } else continue;
 
-                        // 解析 streamSettings（可能存在于 outbound 顶层）
-                        net.clear(); tls.clear(); alpnList.clear();
+                        // streamSettings
                         if (out.HasMember(streamset.c_str()) && out[streamset.c_str()].IsObject()) {
                             const rapidjson::Value &stream = out[streamset.c_str()];
                             net = GetMember(stream, "network");
                             tls = GetMember(stream, "security");
 
-                            // ALPN 列表
                             if (stream.HasMember("tlsSettings") && stream["tlsSettings"].IsObject()) {
                                 const rapidjson::Value &tlsSettings = stream["tlsSettings"];
                                 if (tlsSettings.HasMember("alpn") && tlsSettings["alpn"].IsArray()) {
@@ -522,7 +490,6 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                 }
                             }
 
-                            // Reality 支持
                             if (toLower(trim(tls)) == "reality" && stream.HasMember("realitySettings") && stream["realitySettings"].IsObject()) {
                                 const rapidjson::Value &reality = stream["realitySettings"];
                                 pbk = GetMember(reality, "publicKey");
@@ -532,7 +499,6 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                 tls = "reality";
                             }
 
-                            // transport-specific parsing
                             std::string netLower = toLower(trim(net));
                             if (netLower == "ws") {
                                 if (stream.HasMember(wsset.c_str()) && stream[wsset.c_str()].IsObject())
@@ -565,7 +531,6 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                 }
                             }
 
-                            // TCP header parsing
                             if (stream.HasMember(tcpset.c_str()) && stream[tcpset.c_str()].IsObject())
                                 settings = stream[tcpset.c_str()];
                             else
@@ -577,48 +542,36 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                                     const rapidjson::Value &request = settings["header"]["request"];
                                     if (request.HasMember("path") && request["path"].IsArray() && request["path"].Size())
                                         request["path"][0] >> path;
-
                                     if (request.HasMember("headers") && request["headers"].IsObject()) {
                                         host = GetMember(request["headers"], "Host");
                                         edge = GetMember(request["headers"], "Edge");
                                     }
                                 }
                             }
-                        } // end if streamSettings
+                        }
 
-                        // 设置默认值并兼容性处理
                         if (net.empty()) net = "tcp";
                         if (p == "vmess" && cipher.empty()) cipher = "auto";
-                        if (p == "vless" && encryption.empty()) encryption = "none"; // 兼容缺省
 
-                        // 构造节点（严格按 protocol）
                         Proxy node;
-                        if (p == "vless") {  
-                            // 确保所有参数都有合适的值  
-                            if (encryption.empty()) encryption = "none";  
-                            if (mode.empty() && net == "grpc") mode = "gun";  
-      
-                            vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
-                                           net, encryption, flow, mode, path, host, edge, tls,  
-                                           pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,  
-                                           tls13, "", tribool());  
-                        } else { // vmess  
-                            // 确保 cipher 有默认值  
-                            if (cipher.empty()) cipher = "auto";  
-      
-                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
-                                           net, cipher, path, host, edge, tls, sni, alpnList, udp, tfo, scv,  
-                                           tls13, "");  
-                        }
+                        if (p == "vless") {
+                            vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
+                                           net, encryption, flow, mode, path, host, edge, tls,
+                                           pbk, sid, fp, sni, alpnList, packet_encoding,
+                                           udp, tfo, scv, tls13, "", tribool());
+                        } else if (p == "vmess") {
+                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
+                                           net, cipher, path, host, edge, tls, sni, alpnList,
+                                           udp, tfo, scv, tls13, "");
+                        } else continue;
 
                         node.Id = index++;
                         nodes.emplace_back(std::move(node));
-                    } // end for users
-                } // end for vnext
-            } // end for outbounds
-        } // end if outbounds
+                    }
+                }
+            }
+        }
 
-        // ----------------------------
         // 处理 subItem 和 vmess 数组（保留原逻辑）
         // ----------------------------
         if (json.HasMember("subItem") && json["subItem"].IsArray()) {
@@ -710,8 +663,8 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
         writeLog(LOG_TYPE_ERROR, e.what(), LOG_LEVEL_ERROR);
         throw;
     }
-} 
-                
+}
+
 void explodeSS(std::string ss, Proxy &node) {
     std::string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP,
             secret;
