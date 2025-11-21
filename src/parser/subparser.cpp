@@ -441,7 +441,16 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
   
                 protocol = GetMember(nodejson, "protocol");  
                 auto p = trimLower(protocol);  
-                if (p != "vmess" && p != "vless") continue;  
+                
+                writeLog(LOG_TYPE_INFO, "Detected protocol: [" + protocol + "] -> [" + p + "]", LOG_LEVEL_INFO);  
+  
+                if (p != "vmess" && p != "vless") {  
+                    writeLog(LOG_TYPE_INFO, "Protocol not supported, skipping", LOG_LEVEL_INFO);  
+                    continue;  
+                }  
+  
+                writeLog(LOG_TYPE_INFO, "Processing " + p + " node", LOG_LEVEL_INFO);
+                // if (p != "vmess" && p != "vless") continue;  
   
                 for (rapidjson::SizeType vi = 0; vi < settingsRoot["vnext"].Size(); ++vi) {  
                     auto &serverInfo = settingsRoot["vnext"][vi];  
