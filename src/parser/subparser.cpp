@@ -593,15 +593,22 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
 
                         // 构造节点（严格按 protocol）
                         Proxy node;
-                        if (p == "vless") {
-                            vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
-                                           net, encryption, flow, mode, path, host, edge, tls,
-                                           pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,
-                                           tls13, "", tribool());
-                        } else { // vmess
-                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
-                                           net, cipher, path, host, edge, tls, sni, alpnList, udp, tfo, scv,
-                                           tls13, "");
+                        if (p == "vless") {  
+                            // 确保所有参数都有合适的值  
+                            if (encryption.empty()) encryption = "none";  
+                            if (mode.empty() && net == "grpc") mode = "gun";  
+      
+                            vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
+                                           net, encryption, flow, mode, path, host, edge, tls,  
+                                           pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,  
+                                           tls13, "", tribool());  
+                        } else { // vmess  
+                            // 确保 cipher 有默认值  
+                            if (cipher.empty()) cipher = "auto";  
+      
+                            vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,  
+                                           net, cipher, path, host, edge, tls, sni, alpnList, udp, tfo, scv,  
+                                           tls13, "");  
                         }
 
                         node.Id = index++;
