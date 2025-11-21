@@ -3439,49 +3439,40 @@ void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
         //ignore
         throw;
     }
-    try {
-        std::string pattern = "\"?(inbounds)\"?:";
-        if (!processed &&
-            regFind(sub, pattern)) {
-            pattern = "\"?(outbounds)\"?:";
-            if (regFind(sub, pattern)) {
-                // 修复1: 精确匹配 "route" 而不是 route 子串  
-                pattern = "\"route\"\\s*:";  
-                if (regFind(sub, pattern)) {  
-                    // 修复2: JSON 初步验证  
-                    if (!(sub.size() > 2 && (sub[0] == '{' || sub[0] == '[')))  
-                        return;  
-  
+    try {  
+        std::string pattern = "\"?(inbounds)\"?:";  
+        if (!processed && regFind(sub, pattern)) {  
+            pattern = "\"?(outbounds)\"?:";  
+            if (regFind(sub, pattern)) {  
+                // 直接解析 JSON,不强制要求 route  
+                if (sub.size() > 2 && (sub[0] == '{' || sub[0] == '[')) {  
                     rapidjson::Document document;  
                     document.Parse(sub.c_str());  
                   
-                    // 修复3: 修正逻辑错误,使用 && 而不是 ||  
                     if (!document.HasParseError() && document.IsObject()) {  
                         if (document.HasMember("outbounds") &&  
                             document["outbounds"].IsArray() &&  
                             !document["outbounds"].Empty()) {  
-  
+                          
                             auto &outbounds = document["outbounds"];  
-  
-                            // 修复4: 验证第一个 outbound 是对象  
-                            if (!outbounds[0].IsObject())  
-                                return;  
-  
-                            auto &firstOutbound = outbounds[0];  
-  
-                            // 修复5: 检查内部结构来区分格式  
-                            // SingBox: type 是关键字段  
-                            if (firstOutbound.HasMember("type") &&  
-                                firstOutbound["type"].IsString()) {  
-                                explodeSingbox(outbounds, nodes);  
-                                processed = true;  
-                            }  
-                            // V2Ray: protocol + settings 是关键字段  
-                            else if (firstOutbound.HasMember("protocol") &&  
-                                     firstOutbound["protocol"].IsString() &&  
-                                     firstOutbound.HasMember("settings")) {  
-                                explodeVmessConf(sub, nodes);  
-                                processed = true;  
+                            if (outbounds[0].IsObject()) {  
+                                auto &firstOutbound = outbounds[0];  
+                              
+                                // SingBox: 同时检查 type 和 route (正则合并在这里)  
+                                if (firstOutbound.HasMember("type") &&  
+                                    firstOutbound["type"].IsString()) {
+                                    // firstOutbound["type"].IsString() &&  
+                                    // document.HasMember("route")) {  // ← route 检查合并到这里  
+                                    explodeSingbox(outbounds, nodes);  
+                                    processed = true;  
+                                }  
+                                // V2Ray: protocol + settings 是关键字段  
+                                else if (firstOutbound.HasMember("protocol") &&  
+                                         firstOutbound["protocol"].IsString() &&  
+                                         firstOutbound.HasMember("settings")) {  
+                                    explodeVmessConf(sub, nodes);  
+                                    processed = true;  
+                                }
                             }
                         }
                     }
