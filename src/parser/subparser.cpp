@@ -623,7 +623,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                         entry["security"] >> cipher;  
                         entry["sni"] >> sni;  
                         vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, path, host, "",  
-                                       tls, sni, std::vector<std::string>{}, udp, tfo, scv);  
+                                       tls, sni, std::vector<std::string>{}, udp, tfo, scv, tls13, "");  // ✅ 添加 tls13 和 ""  
                         break;  
                     case 2: // vless  
                         entry["headerType"] >> type;  
