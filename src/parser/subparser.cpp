@@ -712,8 +712,6 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
     }
 } 
                 
-
-                        
 void explodeSS(std::string ss, Proxy &node) {
     std::string ps, password, method, server, port, plugins, plugin, pluginopts, addition, group = SS_DEFAULT_GROUP,
             secret;
