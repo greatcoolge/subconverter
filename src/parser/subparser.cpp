@@ -3439,18 +3439,15 @@ void explode(const std::string &link, Proxy &node) {
 }
 
 void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
-    // 打印前 100 个字符
-    printf("explodeSub received (first 100 chars): %.100s\n", sub.c_str());
-
-    // 检查是否可能是 JSON 或 Clash 配置
-    if (sub.find("inbounds") != std::string::npos) {
-        printf("Found 'inbounds' in raw input!\n");
-    }
-    if (sub.find("outbounds") != std::string::npos) {
-        printf("Found 'outbounds' in raw input!\n");
-    }
-    if (sub.find("Proxy") != std::string::npos || sub.find("proxies") != std::string::npos) {
-        printf("Found 'Proxy' or 'proxies' in raw input!\n");
+    // 只打印前 100 个字符,避免字符串过长  
+    printf("explodeSub received (first 100 chars): %.100s\n", sub.c_str());  
+      
+    // 简化检查逻辑  
+    if (sub.find("inbounds") != std::string::npos) {  
+        printf("Found inbounds\n");  // 简化输出  
+    }  
+    if (sub.find("outbounds") != std::string::npos) {  
+        printf("Found outbounds\n");  
     }
     bool processed = false;
 
