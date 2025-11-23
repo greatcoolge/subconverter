@@ -1157,15 +1157,24 @@ void explodeHysteria(std::string hysteria, Proxy &node) {
     }
 }
 
-void explodeHysteria2(std::string hysteria2, Proxy &node) {
-    hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");
-
-    // replace /? with ?
-    hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);
-    if (regMatch(hysteria2, "hysteria2://(.*?)[:](.*)")) {
-        explodeStdHysteria2(hysteria2, node);
-        return;
-    }
+void explodeHysteria2(std::string hysteria2, Proxy &node) {  
+    std::string original = hysteria2;  
+    hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");  
+    hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);  
+      
+    // 验证替换是否成功  
+    if (hysteria2.find("/?") != std::string::npos) {  
+        // 替换失败,使用手动方式  
+        size_t pos = hysteria2.find("/?");  
+        if (pos != std::string::npos) {  
+            hysteria2.replace(pos, 2, "?");  
+        }  
+    }  
+      
+    if (regMatch(hysteria2, "hysteria2://(.*?)[:](.*)")) {  
+        explodeStdHysteria2(hysteria2, node);  
+        return;  
+    }  
 }
 
 void explodeQuan(const std::string &quan, Proxy &node) {
