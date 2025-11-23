@@ -1157,22 +1157,15 @@ void explodeHysteria(std::string hysteria, Proxy &node) {
     }
 }
 
-void explodeHysteria2(std::string hysteria2, Proxy &node) {  
-    printf("Original: %s\n", hysteria2.c_str());  
-      
-    hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");  
-    printf("After protocol: %s\n", hysteria2.c_str());  
-      
-    hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);  
-    printf("After replace: %s\n", hysteria2.c_str());  
-      
-    if (regMatch(hysteria2, "hysteria2://(.*?)[:](.*)")) {  
-        printf("Regex matched!\n");  
-        explodeStdHysteria2(hysteria2, node);  
-        return;  
-    } else {  
-        printf("Regex NOT matched!\n");  
-    }  
+void explodeHysteria2(std::string hysteria2, Proxy &node) {
+    hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");
+
+    // replace /? with ?
+    hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);
+    if (regMatch(hysteria2, "hysteria2://(.*?)[:](.*)")) {
+        explodeStdHysteria2(hysteria2, node);
+        return;
+    }
 }
 
 void explodeQuan(const std::string &quan, Proxy &node) {
@@ -3408,7 +3401,6 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
 }
 
 void explode(const std::string &link, Proxy &node) {
-    printf("explode called with: %s\n", link.c_str()); // <-- 加在这里
     if (startsWith(link, "ssr://"))
         explodeSSR(link, node);
     else if (startsWith(link, "vmess://") || startsWith(link, "vmess1://"))
@@ -3530,7 +3522,6 @@ void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
         char delimiter =
                 count(sub.begin(), sub.end(), '\n') < 1 ? count(sub.begin(), sub.end(), '\r') < 1 ? ' ' : '\r' : '\n';
         while (getline(strstream, strLink, delimiter)) {
-            printf("Processing link: %s\n", strLink.c_str());  // 添加这行
             Proxy node;
             if (strLink.rfind('\r') != std::string::npos)
                 strLink.erase(strLink.size() - 1);
