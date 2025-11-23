@@ -1157,27 +1157,15 @@ void explodeHysteria(std::string hysteria, Proxy &node) {
     }
 }
 
-void explodeHysteria2(std::string hysteria2, Proxy &node) {  
-    // 只在调试模式下输出  
-    #ifdef DEBUG  
-    writeLog(LOG_TYPE_INFO, "Processing Hysteria2 link", LOG_LEVEL_INFO);  
-    #endif  
-      
-    hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");  
-    hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);  
-      
-    if (hysteria2.find("/?") != std::string::npos) {  
-        writeLog(LOG_TYPE_ERROR, "Failed to replace /?", LOG_LEVEL_ERROR);  
-        return;  
-    }  
-      
-    if (regMatch(hysteria2, "hysteria2://(.*?)[:]([0-9]+)")) {  
-        explodeStdHysteria2(hysteria2, node);  
-        return;  
-    } else {  
-        writeLog(LOG_TYPE_WARN, "Regex match failed", LOG_LEVEL_WARN);  
-        return;  
-    }  
+void explodeHysteria2(std::string hysteria2, Proxy &node) {
+    hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");
+
+    // replace /? with ?
+    hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);
+    if (regMatch(hysteria2, "hysteria2://(.*?)[:](.*)")) {
+        explodeStdHysteria2(hysteria2, node);
+        return;
+    }
 }
 
 void explodeQuan(const std::string &quan, Proxy &node) {
