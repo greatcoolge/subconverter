@@ -1948,7 +1948,7 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
         remarks = add + ":" + port;
 
     hysteria2Construct(node, HYSTERIA2_DEFAULT_GROUP, remarks, add, port, password, host, up, down, alpn, obfsParam,
-                       obfsPassword, host, "", ports, tribool(), tribool(), scv);
+                       obfsPassword, sni, "", ports, tribool(), tribool(), scv);
     return;
 }
 
