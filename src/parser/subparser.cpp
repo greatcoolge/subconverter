@@ -3440,15 +3440,10 @@ void explode(const std::string &link, Proxy &node) {
 
 void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
     // 只打印前 100 个字符,避免字符串过长  
-    printf("explodeSub received (first 100 chars): %.100s\n", sub.c_str());  
+    printf("explodeSub FULL CONTENT:\n%s\n---- END ----\n", sub.c_str());  
       
-    // 简化检查逻辑  
-    if (sub.find("inbounds") != std::string::npos) {  
-        printf("Found inbounds\n");  // 简化输出  
-    }  
-    if (sub.find("outbounds") != std::string::npos) {  
-        printf("Found outbounds\n");  
-    }
+    std::stringstream strstream;
+    std::string strLink;
     bool processed = false;
 
     //try to parse as SSD configuration
