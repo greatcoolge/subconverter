@@ -3441,7 +3441,7 @@ void explode(const std::string &link, Proxy &node) {
 
 void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
     // 只打印前 100 个字符,避免字符串过长  
-    printf("explodeSub FULL CONTENT:\n%s\n---- END ----\n", sub.c_str());  
+    // printf("explodeSub FULL CONTENT:\n%s\n---- END ----\n", sub.c_str());  
       
     std::stringstream strstream;
     std::string strLink;
