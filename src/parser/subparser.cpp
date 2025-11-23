@@ -1771,6 +1771,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
 }
 
 void explodeStdVMess(std::string vmess, Proxy &node) {
+    printf("explodeStdVMess called\n");  // 打印函数调用
     std::string add, port, type, id, aid, net, path, host, tls, remarks;
     std::string addition;
     vmess = vmess.substr(8);
