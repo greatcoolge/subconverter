@@ -1158,31 +1158,25 @@ void explodeHysteria(std::string hysteria, Proxy &node) {
 }
 
 void explodeHysteria2(std::string hysteria2, Proxy &node) {  
-    // 打印原始字符串  
-    writeLog(LOG_TYPE_INFO, "Original hysteria2: " + hysteria2, LOG_LEVEL_INFO);  
-  
-    // 统一协议前缀  
+    // 只在调试模式下输出  
+    #ifdef DEBUG  
+    writeLog(LOG_TYPE_INFO, "Processing Hysteria2 link", LOG_LEVEL_INFO);  
+    #endif  
+      
     hysteria2 = regReplace(hysteria2, "(hysteria2|hy2)://", "hysteria2://");  
-    writeLog(LOG_TYPE_INFO, "After protocol replacement: " + hysteria2, LOG_LEVEL_INFO);  
-  
-    // 替换 /? 为 ?  
     hysteria2 = regReplace(hysteria2, "/\\?", "?", true, false);  
-    writeLog(LOG_TYPE_INFO, "After /? replacement: " + hysteria2, LOG_LEVEL_INFO);  
-  
-    // 检查替换是否失败  
+      
     if (hysteria2.find("/?") != std::string::npos) {  
-        writeLog(LOG_TYPE_ERROR, "Failed to replace /? in: " + hysteria2, LOG_LEVEL_ERROR);  
-        return;  // 替换失败,直接返回  
+        writeLog(LOG_TYPE_ERROR, "Failed to replace /?", LOG_LEVEL_ERROR);  
+        return;  
     }  
-  
-    // 匹配正则 - 使用更精确的正则表达式  
+      
     if (regMatch(hysteria2, "hysteria2://(.*?)[:]([0-9]+)")) {  
-        writeLog(LOG_TYPE_INFO, "Regex matched, calling explodeStdHysteria2", LOG_LEVEL_INFO);  
         explodeStdHysteria2(hysteria2, node);  
         return;  
     } else {  
-        writeLog(LOG_TYPE_WARN, "Regex did not match: " + hysteria2, LOG_LEVEL_WARN);  
-        return;  // 匹配失败,直接返回  
+        writeLog(LOG_TYPE_WARN, "Regex match failed", LOG_LEVEL_WARN);  
+        return;  
     }  
 }
 
