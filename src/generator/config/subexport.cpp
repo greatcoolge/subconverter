@@ -2604,7 +2604,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                     std::string plugin = x.Plugin;  
           
                     // 插件名称转换  
-                    if (plugin == "simple-obfs")  
+                    if (plugin == "simple-obfs" || plugin == "obfs")  
                         plugin = "obfs-local";  
           
                     // 如果插件不支持,跳过整个节点  
