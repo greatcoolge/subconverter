@@ -2612,8 +2612,10 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                         continue;  // 跳过当前节点,不添加到配置中  
                     }  
           
-                    proxy.AddMember("plugin", rapidjson::StringRef(plugin.c_str()), allocator);  
-                    proxy.AddMember("plugin_opts", rapidjson::StringRef(x.PluginOption.c_str()), allocator);  
+                    proxy.AddMember("plugin", rapidjson::Value(plugin.c_str(), allocator).Move(), allocator);  
+                    proxy.AddMember("plugin_opts", rapidjson::Value(x.PluginOption.c_str(), allocator).Move(), allocator);
+                    // proxy.AddMember("plugin", rapidjson::StringRef(plugin.c_str()), allocator);  
+                    // proxy.AddMember("plugin_opts", rapidjson::StringRef(x.PluginOption.c_str()), allocator);  
                 }  
       
                 break;  
