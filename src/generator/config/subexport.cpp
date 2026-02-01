@@ -2604,8 +2604,8 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                     std::string plugin = x.Plugin;  
           
                     // 调试：打印 plugin 的十六进制内容  
-                    for (char c : plugin) printf("%02x ", (unsigned char)c);  
-                    printf("\n");
+                    // for (char c : plugin) printf("%02x ", (unsigned char)c);  
+                    // printf("\n");
                     
                     // 插件名称转换  
                     if (plugin == "simple-obfs" || plugin == "obfs")  
