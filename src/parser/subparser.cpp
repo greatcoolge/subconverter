@@ -3432,103 +3432,103 @@ void explode(const std::string &link, Proxy &node) {
 }
 
 void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
-    // 只打印前 100 个字符,避免字符串过长  
-    // printf("explodeSub FULL CONTENT:\n%s\n---- END ----\n", sub.c_str());  
-      
     std::stringstream strstream;
     std::string strLink;
     bool processed = false;
 
-    //try to parse as SSD configuration
+    // 1️⃣ SSD 配置
     if (startsWith(sub, "ssd://")) {
         explodeSSD(sub, nodes);
-        processed = true;
+        return;
     }
 
-    //try to parse as clash configuration
+    // 2️⃣ Clash 配置
     try {
-        if (!processed && regFind(sub, "\"?(Proxy|proxies)\"?:")) {
+        bool hasProxyKey = regFind(sub, "\"?(Proxy|proxies)\"?:");
+        if (hasProxyKey) {
             regGetMatch(sub, R"(^(?:Proxy|proxies):$\s(?:(?:^ +?.*$| *?-.*$|)\s?)+)", 1, &sub);
             Node yamlnode = Load(sub);
             if (yamlnode.size() && (yamlnode["Proxy"].IsDefined() || yamlnode["proxies"].IsDefined())) {
                 explodeClash(yamlnode, nodes);
-                processed = true;
+                return;
             }
         }
     } catch (std::exception &e) {
-        //writeLog(0, e.what(), LOG_LEVEL_DEBUG);
-        //ignore
+        writeLog(LOG_TYPE_ERROR, e.what(), LOG_LEVEL_ERROR);
         throw;
     }
-    try {  
-        std::string pattern = "\"?(inbounds)\"?:";  
-        if (!processed && regFind(sub, pattern)) {  
-            pattern = "\"?(outbounds)\"?:";  
-            if (regFind(sub, pattern)) {  
-                // 直接解析 JSON,不强制要求 route  
-                if (sub.size() > 2 && (sub[0] == '{' || sub[0] == '[')) {  
-                    rapidjson::Document document;  
-                    document.Parse(sub.c_str());  
-                  
-                    if (!document.HasParseError() && document.IsObject()) {  
-                        if (document.HasMember("outbounds") &&  
-                            document["outbounds"].IsArray() &&  
-                            !document["outbounds"].Empty()) {  
-                          
-                            auto &outbounds = document["outbounds"];  
-                            if (outbounds[0].IsObject()) {  
-                                auto &firstOutbound = outbounds[0];  
-                              
-                                // SingBox: 同时检查 type 和 route (正则合并在这里)  
-                                if (firstOutbound.HasMember("type") &&  
-                                    firstOutbound["type"].IsString()) {
-                                    // firstOutbound["type"].IsString() &&  
-                                    // document.HasMember("route")) {  // ← route 检查合并到这里  
-                                    explodeSingbox(outbounds, nodes);  
-                                    processed = true;  
-                                }  
-                                // V2Ray: protocol + settings 是关键字段  
-                                else if (firstOutbound.HasMember("protocol") &&  
-                                         firstOutbound["protocol"].IsString() &&  
-                                         firstOutbound.HasMember("settings")) {  
-                                    explodeVmessConf(sub, nodes);  
-                                    processed = true;  
-                                }
-                            }
-                        }
-                    }
+
+    // 3️⃣ SingBox / V2Ray JSON 配置
+    try {
+        bool hasInbounds = regFind(sub, "\"?(inbounds)\"?:");
+        bool hasOutbounds = regFind(sub, "\"?(outbounds)\"?:");
+
+        if (!processed && hasInbounds && hasOutbounds &&
+            sub.size() > 2 && (sub[0] == '{' || sub[0] == '[')) {
+
+            rapidjson::Document document;
+            document.Parse(sub.c_str());
+
+            if (!document.HasParseError() && document.IsObject() &&
+                document.HasMember("outbounds") &&
+                document["outbounds"].IsArray() &&
+                !document["outbounds"].Empty() &&
+                document["outbounds"][0].IsObject()) {
+
+                auto &outbounds = document["outbounds"];
+                auto &firstOutbound = outbounds[0];
+
+                // SingBox 节点，只要有 type 就判定为 SingBox
+                if (firstOutbound.HasMember("type") && firstOutbound["type"].IsString()) {
+                    explodeSingbox(outbounds, nodes);
+                    processed = true;
+                }
+                // V2Ray 节点，判断 protocol + settings
+                else if (firstOutbound.HasMember("protocol") &&
+                         firstOutbound["protocol"].IsString() &&
+                         firstOutbound.HasMember("settings")) {
+                    explodeVmessConf(sub, nodes);
+                    processed = true;
                 }
             }
         }
     } catch (std::exception &e) {
         writeLog(LOG_TYPE_ERROR, e.what(), LOG_LEVEL_ERROR);
-        //writeLog(0, e.what(), LOG_LEVEL_DEBUG);
-        //ignore
         throw;
     }
-    //try to parse as surge configuration
+
+    // 4️⃣ Surge 配置
     if (!processed && explodeSurge(sub, nodes)) {
         processed = true;
     }
 
-    //try to parse as normal subscription
+    // 5️⃣ 普通订阅
     if (!processed) {
         sub = urlSafeBase64Decode(sub);
-        if (regFind(sub, "(vmess|shadowsocks|http|trojan)\\s*?=")) {
-            if (explodeSurge(sub, nodes))
-                return;
-        }
+
+        bool hasKnownProtocol = regFind(sub, "(vmess|shadowsocks|http|trojan)\\s*?=");
+        if (hasKnownProtocol && explodeSurge(sub, nodes))
+            return;
+
         strstream << sub;
-        char delimiter =
-                count(sub.begin(), sub.end(), '\n') < 1 ? count(sub.begin(), sub.end(), '\r') < 1 ? ' ' : '\r' : '\n';
+
+        char delimiter = count(sub.begin(), sub.end(), '\n') < 1 ?
+                         (count(sub.begin(), sub.end(), '\r') < 1 ? ' ' : '\r') :
+                         '\n';
+
         while (getline(strstream, strLink, delimiter)) {
-            Proxy node;
+            if (strLink.empty())
+                continue;
+
             if (strLink.rfind('\r') != std::string::npos)
                 strLink.erase(strLink.size() - 1);
+
+            Proxy node;
             explode(strLink, node);
-            if (strLink.empty() || node.Type == ProxyType::Unknown) {
+
+            if (node.Type == ProxyType::Unknown)
                 continue;
-            }
+
             nodes.emplace_back(std::move(node));
         }
     }
