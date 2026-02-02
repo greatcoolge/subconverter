@@ -3432,63 +3432,74 @@ void explode(const std::string &link, Proxy &node) {
 }
 
 void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
+    // 只打印前 100 个字符,避免字符串过长  
+    // printf("explodeSub FULL CONTENT:\n%s\n---- END ----\n", sub.c_str());  
+
     std::stringstream strstream;
     std::string strLink;
     bool processed = false;
 
-    // 1️⃣ SSD 配置
+    // try to parse as SSD configuration
     if (startsWith(sub, "ssd://")) {
         explodeSSD(sub, nodes);
-        return;
+        processed = true;
     }
 
-    // 2️⃣ Clash 配置
+    // try to parse as Clash configuration
     try {
-        bool hasProxyKey = regFind(sub, "\"?(Proxy|proxies)\"?:");
-        if (hasProxyKey) {
+        if (!processed && regFind(sub, "\"?(Proxy|proxies)\"?:")) {
             regGetMatch(sub, R"(^(?:Proxy|proxies):$\s(?:(?:^ +?.*$| *?-.*$|)\s?)+)", 1, &sub);
             Node yamlnode = Load(sub);
             if (yamlnode.size() && (yamlnode["Proxy"].IsDefined() || yamlnode["proxies"].IsDefined())) {
                 explodeClash(yamlnode, nodes);
-                return;
+                processed = true;
             }
         }
     } catch (std::exception &e) {
-        writeLog(LOG_TYPE_ERROR, e.what(), LOG_LEVEL_ERROR);
+        // 如果 Clash 解析出错，可以记录日志
+        // writeLog(0, e.what(), LOG_LEVEL_DEBUG);
         throw;
     }
 
-    // 3️⃣ SingBox / V2Ray JSON 配置
+    // try to parse as SingBox / V2Ray JSON configuration
     try {
-        bool hasInbounds = regFind(sub, "\"?(inbounds)\"?:");
-        bool hasOutbounds = regFind(sub, "\"?(outbounds)\"?:");
+        std::string pattern = "\"?(inbounds)\"?:";
+        if (!processed && regFind(sub, pattern)) {
+            pattern = "\"?(outbounds)\"?:";
+            if (regFind(sub, pattern)) {
+                // JSON 初步验证
+                if (sub.size() > 2 && (sub[0] == '{' || sub[0] == '[')) {
+                    rapidjson::Document document;
+                    document.Parse(sub.c_str());
 
-        if (!processed && hasInbounds && hasOutbounds &&
-            sub.size() > 2 && (sub[0] == '{' || sub[0] == '[')) {
+                    if (!document.HasParseError() && document.IsObject()) {
+                        if (document.HasMember("outbounds") &&
+                            document["outbounds"].IsArray() &&
+                            !document["outbounds"].Empty()) {
 
-            rapidjson::Document document;
-            document.Parse(sub.c_str());
+                            auto &outbounds = document["outbounds"];
 
-            if (!document.HasParseError() && document.IsObject() &&
-                document.HasMember("outbounds") &&
-                document["outbounds"].IsArray() &&
-                !document["outbounds"].Empty() &&
-                document["outbounds"][0].IsObject()) {
+                            // 确保第一个 outbound 是对象
+                            if (!outbounds[0].IsObject())
+                                return;
 
-                auto &outbounds = document["outbounds"];
-                auto &firstOutbound = outbounds[0];
+                            auto &firstOutbound = outbounds[0];
 
-                // SingBox 节点，只要有 type 就判定为 SingBox
-                if (firstOutbound.HasMember("type") && firstOutbound["type"].IsString()) {
-                    explodeSingbox(outbounds, nodes);
-                    processed = true;
-                }
-                // V2Ray 节点，判断 protocol + settings
-                else if (firstOutbound.HasMember("protocol") &&
-                         firstOutbound["protocol"].IsString() &&
-                         firstOutbound.HasMember("settings")) {
-                    explodeVmessConf(sub, nodes);
-                    processed = true;
+                            // SingBox 节点，只要有 type 就判定为 SingBox
+                            if (firstOutbound.HasMember("type") &&
+                                firstOutbound["type"].IsString()) {
+                                explodeSingbox(outbounds, nodes);
+                                processed = true;
+                            }
+                            // V2Ray 节点，判断 protocol + settings
+                            else if (firstOutbound.HasMember("protocol") &&
+                                     firstOutbound["protocol"].IsString() &&
+                                     firstOutbound.HasMember("settings")) {
+                                explodeVmessConf(sub, nodes);
+                                processed = true;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -3497,18 +3508,18 @@ void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
         throw;
     }
 
-    // 4️⃣ Surge 配置
+    // try to parse as Surge configuration
     if (!processed && explodeSurge(sub, nodes)) {
         processed = true;
     }
 
-    // 5️⃣ 普通订阅
+    // try to parse as normal subscription
     if (!processed) {
         sub = urlSafeBase64Decode(sub);
-
-        bool hasKnownProtocol = regFind(sub, "(vmess|shadowsocks|http|trojan)\\s*?=");
-        if (hasKnownProtocol && explodeSurge(sub, nodes))
-            return;
+        if (regFind(sub, "(vmess|shadowsocks|http|trojan)\\s*?=")) {
+            if (explodeSurge(sub, nodes))
+                return;
+        }
 
         strstream << sub;
 
@@ -3517,16 +3528,13 @@ void explodeSub(std::string sub, std::vector<Proxy> &nodes) {
                          '\n';
 
         while (getline(strstream, strLink, delimiter)) {
-            if (strLink.empty())
-                continue;
-
+            Proxy node;
             if (strLink.rfind('\r') != std::string::npos)
                 strLink.erase(strLink.size() - 1);
 
-            Proxy node;
             explode(strLink, node);
 
-            if (node.Type == ProxyType::Unknown)
+            if (strLink.empty() || node.Type == ProxyType::Unknown)
                 continue;
 
             nodes.emplace_back(std::move(node));
