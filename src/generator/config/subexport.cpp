@@ -566,12 +566,12 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
                     singleproxy["password"] = x.Password;
                 }
                 if (!x.Fingerprint.empty()) {
-                    singleproxy["client-fingerprint"] = x.Fingerprint;
+                    singleproxy["fingerprint"] = x.Fingerprint;
                 }
                 if (!udp.is_undef()) {
                     singleproxy["udp"] = udp.get();
                 }
-                if (!x.ServerName.empty()) {
+                if (!x.SNI.empty()) {
                     singleproxy["sni"] = x.SNI;
                 }
                 if (!scv.is_undef())
@@ -619,6 +619,8 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
                 }
                 if (!x.Flow.empty())
                     singleproxy["flow"] = x.Flow;
+                if (!x.Encryption.empty() && x.Encryption != "none")
+                    singleproxy["encryption"] = x.Encryption;
                 if (!scv.is_undef())
                     singleproxy["skip-cert-verify"] = scv.get();
                 if (!x.PublicKey.empty()) {
@@ -2243,6 +2245,10 @@ proxyToLoon(std::vector<Proxy> &nodes, const std::string &base_conf,
 
                 proxy = "vmess," + hostname + "," + port + "," + method + ",\"" + id + "\",over-tls=" +
                         (tlssecure ? "true" : "false");
+
+                if (!sni.empty())
+                    host = sni;
+
                 if (tlssecure)
                     proxy += ",tls-name=" + host;
                 switch (hash_(transproto)) {
@@ -2306,6 +2312,16 @@ proxyToLoon(std::vector<Proxy> &nodes, const std::string &base_conf,
                 proxy = "trojan," + hostname + "," + port + ",\"" + password + "\"";
                 if (!host.empty())
                     proxy += ",tls-name=" + host;
+                switch (hash_(transproto)) {
+                    case "tcp"_hash:
+                        proxy += ",transport=tcp";
+                        break;
+                    case "ws"_hash:
+                        proxy += ",transport=ws,path=" + path + ",host=" + host;
+                        break;
+                    default:
+                        continue;
+                }
                 if (!scv.is_undef())
                     proxy += ",skip-cert-verify=" + std::string(scv.get() ? "true" : "false");
                 break;
@@ -2622,7 +2638,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                     // proxy.AddMember("plugin_opts", rapidjson::StringRef(x.PluginOption.c_str()), allocator);  
                 }  
       
-                break;  
+                break;
             }
             //            case ProxyType::ShadowsocksR: {
             //                addSingBoxCommonMembers(proxy, x, "shadowsocksr", allocator);
@@ -2732,7 +2748,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                         break;  
                 }  
       
-                break;  
+                break;
             }
             case ProxyType::Trojan: {
                 addSingBoxCommonMembers(proxy, x, "trojan", allocator);
