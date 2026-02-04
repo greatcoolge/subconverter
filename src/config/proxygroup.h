@@ -35,7 +35,9 @@ struct ProxyGroupConfig
     Boolean DisableUdp;
     Boolean Persistent;
     Boolean EvaluateBeforeUse;
-
+    Integer idle_timeout = 0;
+    Boolean InterruptExistConnections;
+    
     String TypeStr() const
     {
         switch(Type)
