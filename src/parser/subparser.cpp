@@ -591,7 +591,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                         if (p == "vless") {
                             vlessConstruct(node, XRAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
                                            net, "auto", flow, mode, path, host, edge, tls,
-                                           pbk, sid, fp, sni, alpnList, packet_encoding, encryption, udp, tfo, scv,
+                                           pbk, sid, fp, sni, alpnList, packet_encoding, udp, tfo, scv,
                                            tls13, "", tribool());
                         } else {
                             vmessConstruct(node, V2RAY_DEFAULT_GROUP, add + ":" + port, add, port, type, id, aid,
@@ -665,7 +665,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
 
                         vlessConstruct(node, XRAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, flow, mode,
                                        path, host, "", tls, pbk, sid, fp, sni, std::vector<std::string>{}, packet_encoding,
-                                       encryption, udp, tfo, scv, tls13, "", tribool());
+                                       udp, tfo, scv, tls13, "", tribool());
                         break;
                     case 3: // ss
                         entry["id"] >> id;
