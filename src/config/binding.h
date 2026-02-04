@@ -34,6 +34,10 @@ namespace toml
                     conf.Lazy = find_or<bool>(v, "lazy", false);
                 if(v.contains("evaluate-before-use"))
                     conf.EvaluateBeforeUse = find_or(v, "evaluate-before-use", conf.EvaluateBeforeUse.get());
+                if(v.contains("idle_timeout"))  
+                    conf.idle_timeout = find_or<Integer>(v, "idle_timeout", 0);  
+                if(v.contains("interrupt_exist_connections"))  
+                    conf.InterruptExistConnections = find_or<bool>(v, "interrupt_exist_connections", false);
                 break;
             case "load-balance"_hash:
                 conf.Type = ProxyGroupType::LoadBalance;
@@ -73,6 +77,10 @@ namespace toml
                     conf.Lazy = find_or<bool>(v, "lazy", false);
                 if(v.contains("evaluate-before-use"))
                     conf.EvaluateBeforeUse = find_or(v, "evaluate-before-use", conf.EvaluateBeforeUse.get());
+                if(v.contains("idle_timeout"))  
+                    conf.idle_timeout = find_or<Integer>(v, "idle_timeout", 0);  
+                if(v.contains("interrupt_exist_connections"))  
+                    conf.InterruptExistConnections = find_or<bool>(v, "interrupt_exist_connections", false);
                 break;
             default:
                 throw serialization_error(format_error("Proxy Group has unsupported type!", v.at("type").location(), "should be one of following: select, url-test, load-balance, fallback, relay, ssid"), v.at("type").location());
