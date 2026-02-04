@@ -653,7 +653,8 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                         entry["security"] >> cipher;
                         entry["sni"] >> sni;
                         entry["flow"] >> flow;
-
+                        entry["encryption"] >> encryption;  // 添加这行
+                        
                         if (trimLower(tls) == "reality") {
                             entry["publicKey"] >> pbk;
                             entry["shortId"] >> sid;
