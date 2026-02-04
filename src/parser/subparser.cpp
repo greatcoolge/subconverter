@@ -662,6 +662,7 @@ void explodeVmessConf(std::string content, std::vector<Proxy> &nodes) {
                         }
 
                         if (cipher.empty()) cipher = "none";
+                        if (encryption.empty()) encryption = "none";  // 添加这行
                         if (mode.empty() && trimLower(net) == "grpc") mode = "gun";
 
                         vlessConstruct(node, XRAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net, cipher, flow, mode,
