@@ -2674,6 +2674,12 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 // 必填字段  
                 proxy.AddMember("uuid", rapidjson::StringRef(x.UserId.c_str()), allocator);  
       
+                // ===== encryption（上游新增，补上）=====
+                if (!x.Encryption.empty() && x.Encryption != "none") {
+                    proxy.AddMember("encryption",
+                        rapidjson::StringRef(x.Encryption.c_str()), allocator);
+                }
+                
                 // flow 字段(可选)  
                 if (!x.Flow.empty())  
                     proxy.AddMember("flow", rapidjson::StringRef(x.Flow.c_str()), allocator);  
