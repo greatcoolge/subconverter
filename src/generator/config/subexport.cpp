@@ -3137,6 +3137,10 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                             allocator);
             if (x.Tolerance > 0)
                 group.AddMember("tolerance", x.Tolerance, allocator);
+            if (x.idle_timeout > 0)    
+                group.AddMember("idle_timeout", rapidjson::Value(formatSingBoxInterval(x.idle_timeout).c_str(), allocator), allocator);  
+            if (!x.InterruptExistConnections.is_undef())    
+                group.AddMember("interrupt_exist_connections", buildBooleanValue(x.InterruptExistConnections), allocator);
         }
         outbounds.PushBack(group, allocator);
     }
