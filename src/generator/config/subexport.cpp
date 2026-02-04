@@ -335,6 +335,11 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
                                 singleproxy["ws-headers"]["Host"] = x.Host;
                             if (!x.Edge.empty())
                                 singleproxy["ws-headers"]["Edge"] = x.Edge;
+                            singleproxy["ws-opts"]["path"] = x.Path;
+                            if (!x.Host.empty())
+                                singleproxy["ws-opts"]["headers"]["Host"] = x.Host;
+                            if (!x.Edge.empty())
+                                singleproxy["ws-opts"]["headers"]["Edge"] = x.Edge;
                         }
                         break;
                     case "http"_hash:
@@ -658,6 +663,14 @@ proxyToClash(std::vector<Proxy> &nodes, YAML::Node &yamlnode, const ProxyGroupCo
                                 singleproxy["ws-headers"]["Host"] = x.Host;
                             if (!x.Edge.empty())
                                 singleproxy["ws-headers"]["Edge"] = x.Edge;
+                            singleproxy["ws-opts"]["path"] = x.Path;
+                            if (!x.Host.empty())
+                                singleproxy["ws-opts"]["headers"]["Host"] = x.Host;
+                            if (!x.Edge.empty())
+                                singleproxy["ws-opts"]["headers"]["Edge"] = x.Edge;
+                            if (!x.V2rayHttpUpgrade.is_undef()) {
+                                singleproxy["ws-opts"]["v2ray-http-upgrade"] = x.V2rayHttpUpgrade.get();
+                            }
                         }
                         break;
                     case "http"_hash:
@@ -1056,6 +1069,13 @@ std::string proxyToSurge(std::vector<Proxy> &nodes, const std::string &base_conf
                     proxy += ", sni=" + sni;
                 } else if (!host.empty()) {
                     proxy += ", sni=" + host;
+                }
+                if (transproto == "ws") {
+                    proxy += ", ws=true, ws-path=" + path;
+                    if (!host.empty())
+                        headers.push_back("Host:\"" + host + "\"");
+                    if (!headers.empty())
+                        proxy += ", ws-headers=" + join(headers, "|");
                 }
                 if (!scv.is_undef())
                     proxy += ", skip-cert-verify=" + scv.get_str();
