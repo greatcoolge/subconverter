@@ -3077,14 +3077,14 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 tls.AddMember("reality", reality, allocator);
             } else {
                 // 普通 fingerprint
-                if (!x.Fingerprint.empty()) {
-                    rapidjson::Value utls(rapidjson::kObjectType);
-                    utls.AddMember("enabled", true, allocator);
-                    utls.AddMember("fingerprint",
-                        rapidjson::StringRef(x.Fingerprint.c_str()), allocator);
+                // if (!x.Fingerprint.empty()) {
+                    // rapidjson::Value utls(rapidjson::kObjectType);
+                    // utls.AddMember("enabled", true, allocator);
+                    // utls.AddMember("fingerprint",
+                        // rapidjson::StringRef(x.Fingerprint.c_str()), allocator);
 
-                    tls.AddMember("utls", utls, allocator);
-                }
+                    // tls.AddMember("utls", utls, allocator);
+                // }
                 // 非 Reality 模式才添加 insecure
                 if (!scv.is_undef()) {
                     tls.AddMember("insecure", buildBooleanValue(scv), allocator);
