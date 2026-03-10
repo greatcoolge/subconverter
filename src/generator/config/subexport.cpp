@@ -3058,10 +3058,15 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
             }
 
             // === Reality 模式（仅 VLESS） ===
-            if (x.Type == ProxyType::VLESS && (!x.PublicKey.empty() || !x.ShortId.empty())) {
+            if (x.Type == ProxyType::VLESS && !x.PublicKey.empty())
+            // if (x.Type == ProxyType::VLESS && (!x.PublicKey.empty() || !x.ShortId.empty())) {
+                // utls
                 rapidjson::Value utls(rapidjson::kObjectType);
                 utls.AddMember("enabled", true, allocator);
-                utls.AddMember("fingerprint", rapidjson::StringRef("chrome"), allocator);
+
+                const char* fp = x.Fingerprint.empty() ? "chrome" : x.Fingerprint.c_str();
+                utls.AddMember("fingerprint", rapidjson::StringRef(fp), allocator);
+
                 tls.AddMember("utls", utls, allocator);
 
                 rapidjson::Value reality(rapidjson::kObjectType);
@@ -3071,6 +3076,15 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
                 reality.AddMember("short_id", rapidjson::StringRef(x.ShortId.empty() ? "" : x.ShortId.c_str()), allocator);
                 tls.AddMember("reality", reality, allocator);
             } else {
+                // 普通 fingerprint
+                if (!x.Fingerprint.empty()) {
+                    rapidjson::Value utls(rapidjson::kObjectType);
+                    utls.AddMember("enabled", true, allocator);
+                    utls.AddMember("fingerprint",
+                        rapidjson::StringRef(x.Fingerprint.c_str()), allocator);
+
+                    tls.AddMember("utls", utls, allocator);
+                }
                 // 非 Reality 模式才添加 insecure
                 if (!scv.is_undef()) {
                     tls.AddMember("insecure", buildBooleanValue(scv), allocator);
