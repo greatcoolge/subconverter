@@ -3058,7 +3058,7 @@ proxyToSingBox(std::vector<Proxy> &nodes, rapidjson::Document &json,
             }
 
             // === Reality 模式（仅 VLESS） ===
-            if (x.Type == ProxyType::VLESS && !x.PublicKey.empty())
+            if (x.Type == ProxyType::VLESS && !x.PublicKey.empty()) {
             // if (x.Type == ProxyType::VLESS && (!x.PublicKey.empty() || !x.ShortId.empty())) {
                 // utls
                 rapidjson::Value utls(rapidjson::kObjectType);
