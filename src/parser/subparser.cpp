@@ -619,11 +619,13 @@ void parseConfigArray(const rapidjson::Document& json,
         if (port == "0") continue;
 
         std::string subid = GetMember(entry, "subid");  
-        std::string group = V2RAY_DEFAULT_GROUP; // 默认值  
-          
-        // 只有 VMess 节点才支持自定义分组  
-        if (!subid.empty() && subdata.find(subid) != subdata.end())  
-            group = subdata[subid];
+        std::string vmessGroup = V2RAY_DEFAULT_GROUP;
+        std::string vlessGroup = XRAY_DEFAULT_GROUP;
+
+        if (!subid.empty() && subdata.find(subid) != subdata.end()) {
+            vmessGroup = subdata[subid];
+            vlessGroup = subdata[subid];
+        }
         if (ps.empty()) ps = add + ":" + port;
 
         switch (configType) {
@@ -645,7 +647,7 @@ void parseConfigArray(const rapidjson::Document& json,
 
                 if (cipher.empty()) cipher = "auto";
 
-                vmessConstruct(node, group, ps, add, port, type, id, aid,
+                vmessConstruct(node, vmessGroup, ps, add, port, type, id, aid,
                                net, cipher, path, host, "", tls, sni, std::vector<std::string>{},
                                udp, tfo, scv, tls13, "");
                 node.Id = index++;
@@ -686,7 +688,7 @@ void parseConfigArray(const rapidjson::Document& json,
                 if (encryption.empty()) encryption = "none";
                 if (mode.empty() && trimLower(net) == "grpc") mode = "gun";
 
-                vlessConstruct(node, XRAY_DEFAULT_GROUP, ps, add, port, type, id, aid, net,
+                vlessConstruct(node, vlessGroup, ps, add, port, type, id, aid, net,
                                cipher, flow, mode, path, host, "", tls,
                                pbk, sid, fp, sni, std::vector<std::string>{}, packet_encoding,
                                encryption, udp, tfo, scv, tls13, "", tribool());
