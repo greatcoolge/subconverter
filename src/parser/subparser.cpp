@@ -744,7 +744,7 @@ void explodeVmessConf(const std::string& content, std::vector<Proxy>& nodes) {
     }
 
     // 解析旧的 vmess 数组（兼容旧格式）
-    parseConfigArray(json, nodes, index);
+    parseConfigArray(json, nodes, subdata, index);
 }
 
 void explodeSS(std::string ss, Proxy &node) {
