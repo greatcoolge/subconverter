@@ -434,7 +434,8 @@ void parseOutbound(const rapidjson::Value& outbound, std::vector<Proxy>& nodes, 
     std::string add, port, type, id, aid, net, path, host, edge, tls, cipher, sni;
     std::string flow, encryption, pbk, sid, fp, mode, packet_encoding;
     std::vector<std::string> alpnList;
-    tribool udp, tfo, scv, tls13;  // 默认 indeterminate
+    tribool udp = tribool(), tfo = tribool(), scv = tribool(), tls13 = tribool();
+    // tribool udp, tfo, scv, tls13;  // 默认 indeterminate
 
     for (rapidjson::SizeType vi = 0; vi < settingsRoot["vnext"].Size(); ++vi) {
         const auto& serverInfo = settingsRoot["vnext"][vi];
@@ -621,7 +622,7 @@ void parseConfigArray(const rapidjson::Document& json,
         switch (configType) {
             case 1: { // VMess
                 Proxy node;
-                tribool udp, tfo, scv, tls13;
+                tribool udp = tribool(), tfo = tribool(), scv = tribool(), tls13 = tribool();
 
                 std::string type, id, aid, net, path, host, tls, cipher, sni;
                 entry["headerType"] >> type;
@@ -633,7 +634,7 @@ void parseConfigArray(const rapidjson::Document& json,
                 entry["streamSecurity"] >> tls;
                 entry["security"] >> cipher;
                 entry["sni"] >> sni;
-                entry["allowInsecure"] >> scv;
+                scv = GetMember(entry, "allowInsecure");  // 修正：使用 GetMember
 
                 if (cipher.empty()) cipher = "auto";
 
@@ -646,7 +647,7 @@ void parseConfigArray(const rapidjson::Document& json,
             }
             case 2: { // VLESS
                 Proxy node;
-                tribool udp, tfo, scv, tls13;
+                tribool udp = tribool(), tfo = tribool(), scv = tribool(), tls13 = tribool();
 
                 std::string type, id, aid, net, path, host, tls, cipher, sni;
                 std::string flow, encryption, pbk, sid, fp, mode, packet_encoding;
@@ -664,14 +665,14 @@ void parseConfigArray(const rapidjson::Document& json,
                 entry["encryption"] >> encryption;
                 entry["mode"] >> mode;
                 entry["packet_encoding"] >> packet_encoding;
-                entry["allowInsecure"] >> scv;
+                scv = GetMember(entry, "allowInsecure");  // 修正：使用 GetMember
 
                 // Reality 特殊字段
                 if (trimLower(tls) == "reality") {
                     entry["publicKey"] >> pbk;
                     entry["shortId"] >> sid;
                     entry["fingerprint"] >> fp;
-                    tls = "reality";  // 标准化
+                    tls = "reality";
                 }
 
                 if (cipher.empty()) cipher = "none";
@@ -689,7 +690,7 @@ void parseConfigArray(const rapidjson::Document& json,
             case 3: { // Shadowsocks
                 Proxy node;
                 std::string id, cipher;
-                tribool udp, tfo, scv;
+                tribool udp = tribool(), tfo = tribool(), scv = tribool();  // 无需解析 allowInsecure
 
                 entry["id"] >> id;
                 entry["security"] >> cipher;
@@ -701,7 +702,7 @@ void parseConfigArray(const rapidjson::Document& json,
             }
             case 4: { // SOCKS
                 Proxy node;
-                tribool udp, tfo, scv;
+                tribool udp = tribool(), tfo = tribool(), scv = tribool();  // 无需解析 allowInsecure
 
                 socksConstruct(node, SOCKS_DEFAULT_GROUP, ps, add, port, "", "", udp, tfo, scv);
                 node.Id = index++;
