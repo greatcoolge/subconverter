@@ -602,8 +602,9 @@ void parseOutbound(const rapidjson::Value& outbound, std::vector<Proxy>& nodes, 
 }
 
 // 解析旧的配置数组（vmess 数组）
-void parseConfigArray(const rapidjson::Document& json,
-                      std::vector<Proxy>& nodes,
+void parseConfigArray(const rapidjson::Document& json,  
+                      std::vector<Proxy>& nodes,  
+                      std::map<std::string, std::string>& subdata,  
                       uint32_t& index) {
     if (!json.HasMember("vmess") || !json["vmess"].IsArray()) return;
 
@@ -617,6 +618,12 @@ void parseConfigArray(const rapidjson::Document& json,
         std::string port = GetMember(entry, "port");
         if (port == "0") continue;
 
+        std::string subid = GetMember(entry, "subid");  
+        std::string group = V2RAY_DEFAULT_GROUP; // 默认值  
+          
+        // 只有 VMess 节点才支持自定义分组  
+        if (!subid.empty() && subdata.find(subid) != subdata.end())  
+            group = subdata[subid];
         if (ps.empty()) ps = add + ":" + port;
 
         switch (configType) {
@@ -638,7 +645,7 @@ void parseConfigArray(const rapidjson::Document& json,
 
                 if (cipher.empty()) cipher = "auto";
 
-                vmessConstruct(node, V2RAY_DEFAULT_GROUP, ps, add, port, type, id, aid,
+                vmessConstruct(node, group, ps, add, port, type, id, aid,
                                net, cipher, path, host, "", tls, sni, std::vector<std::string>{},
                                udp, tfo, scv, tls13, "");
                 node.Id = index++;
