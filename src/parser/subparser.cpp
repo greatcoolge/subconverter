@@ -1849,17 +1849,20 @@ void explodeStdHysteria(std::string hysteria, Proxy &node) {
     insecure = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "upmbps");
     down = getUrlArg(addition, "downmbps");
-    alpn = getUrlArg(addition, "alpn");
+    // alpn = getUrlArg(addition, "alpn");
     obfsParam = getUrlArg(addition, "obfsParam");
     sni = getUrlArg(addition, "peer");
 
     if (remarks.empty())
         remarks = add + ":" + port;
+    std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        std::string decodedAlpn = urlDecode(alpn);  // URL 解码
+        alpnList = split(decodedAlpn, ",");         // 按逗号拆分多个 ALPN
+        // alpnList.push_back(alpn);
     }
-    hysteriaConstruct(node, HYSTERIA_DEFAULT_GROUP, remarks, add, port, type, auth, auth_str, host, up, down, alpn,
+    hysteriaConstruct(node, HYSTERIA_DEFAULT_GROUP, remarks, add, port, type, auth, auth_str, host, up, down, alpnList,
                       obfsParam,
                       insecure, "", sni);
     return;
@@ -1947,7 +1950,7 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
     scv = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "up");
     down = getUrlArg(addition, "down");
-    alpn = getUrlArg(addition, "alpn");
+    // alpn = getUrlArg(addition, "alpn");
     obfsParam = getUrlArg(addition, "obfs");
     obfsPassword = getUrlArg(addition, "obfs-password");
     host = getUrlArg(addition, "sni");
@@ -1956,7 +1959,13 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
     if (remarks.empty())
         remarks = add + ":" + port;
 
-    hysteria2Construct(node, HYSTERIA2_DEFAULT_GROUP, remarks, add, port, password, host, up, down, alpn, obfsParam,
+    std::string alpn = getUrlArg(addition, "alpn");
+    std::vector<std::string> alpnList;
+    if (!alpn.empty()) {
+        std::string decodedAlpn = urlDecode(alpn);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+    }
+    hysteria2Construct(node, HYSTERIA2_DEFAULT_GROUP, remarks, add, port, password, host, up, down, alpnList, obfsParam,
                        obfsPassword, sni, "", ports, tribool(), tribool(), scv);
     return;
 }
@@ -3377,7 +3386,7 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
     congestion_control = getUrlArg(addition, "congestion_control");
     if (remarks.empty())
         remarks = add + ":" + port;
-    tuicConstruct(node, TUIC_DEFAULT_GROUP, remarks, add, port, password, congestion_control, alpn, sni, uuid, "native",
+    tuicConstruct(node, TUIC_DEFAULT_GROUP, remarks, add, port, password, congestion_control, alpnList, sni, uuid, "native",
                   "",
                   tribool(),
                   tribool(), scv);
