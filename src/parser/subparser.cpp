@@ -3357,10 +3357,10 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
 
     scv = getUrlArg(addition, "insecure");
     // alpn = getUrlArg(addition, "alpn");
-    std::string alpnRaw = getUrlArg(addition, "alpn");
+    std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
-    if (!alpnRaw.empty()) {
-        std::string decodedAlpn = urlDecode(alpnRaw);
+    if (!alpn.empty()) {
+        std::string decodedAlpn = urlDecode(alpn);
         alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
     }
     sni = getUrlArg(addition, "sni");
