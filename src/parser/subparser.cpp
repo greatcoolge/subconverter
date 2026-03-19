@@ -1123,7 +1123,9 @@ void explodeTrojan(std::string trojan, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        std::string decodedAlpn = urlDecode(alpn);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        // alpnList.push_back(alpn);
     }
     trojanConstruct(node, group, remark, server, port, psk, network, host, path, fp, sni, alpnList, true, tribool(),
                     tfo, scv);
@@ -1817,7 +1819,9 @@ void explodeStdVMess(std::string vmess, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        std::string decodedAlpn = urlDecode(alpn);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, "auto", path, host, "", tls, "",
                    alpnList);
@@ -1985,7 +1989,9 @@ void explodeStdVless(std::string vless, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        std::string decodedAlpn = urlDecode(alpn);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        // alpnList.push_back(alpn);
     }
     switch (hash_(net)) {
         case "tcp"_hash:
@@ -2061,7 +2067,9 @@ void explodeShadowrocket(std::string rocket, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        std::string decodedAlpn = urlDecode(alpn);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls, "",
                    alpnList);
@@ -2101,7 +2109,9 @@ void explodeKitsunebi(std::string kit, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        std::string decodedAlpn = urlDecode(alpn);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls, "",
                    alpnList);
