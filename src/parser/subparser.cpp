@@ -1849,20 +1849,17 @@ void explodeStdHysteria(std::string hysteria, Proxy &node) {
     insecure = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "upmbps");
     down = getUrlArg(addition, "downmbps");
-    // alpn = getUrlArg(addition, "alpn");
+    alpn = getUrlArg(addition, "alpn");
     obfsParam = getUrlArg(addition, "obfsParam");
     sni = getUrlArg(addition, "peer");
 
     if (remarks.empty())
         remarks = add + ":" + port;
-    std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);  // URL 解码
-        alpnList = split(decodedAlpn, ",");         // 按逗号拆分多个 ALPN
-        // alpnList.push_back(alpn);
+        alpnList.push_back(alpn);
     }
-    hysteriaConstruct(node, HYSTERIA_DEFAULT_GROUP, remarks, add, port, type, auth, auth_str, host, up, down, alpnList,
+    hysteriaConstruct(node, HYSTERIA_DEFAULT_GROUP, remarks, add, port, type, auth, auth_str, host, up, down, alpn,
                       obfsParam,
                       insecure, "", sni);
     return;
@@ -1950,7 +1947,7 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
     scv = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "up");
     down = getUrlArg(addition, "down");
-    // alpn = getUrlArg(addition, "alpn");
+    alpn = getUrlArg(addition, "alpn");
     obfsParam = getUrlArg(addition, "obfs");
     obfsPassword = getUrlArg(addition, "obfs-password");
     host = getUrlArg(addition, "sni");
@@ -1959,13 +1956,8 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
     if (remarks.empty())
         remarks = add + ":" + port;
 
-    std::string alpn = getUrlArg(addition, "alpn");
-    std::vector<std::string> alpnList;
-    if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
-    }
-    hysteria2Construct(node, HYSTERIA2_DEFAULT_GROUP, remarks, add, port, password, host, up, down, alpnList, obfsParam,
+    
+    hysteria2Construct(node, HYSTERIA2_DEFAULT_GROUP, remarks, add, port, password, host, up, down, alpn, obfsParam,
                        obfsPassword, sni, "", ports, tribool(), tribool(), scv);
     return;
 }
