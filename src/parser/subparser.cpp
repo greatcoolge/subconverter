@@ -3367,18 +3367,12 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
         add = add.substr(1, add.length() - 2);
 
     scv = getUrlArg(addition, "insecure");
-    // alpn = getUrlArg(addition, "alpn");
-    std::string alpn = getUrlArg(addition, "alpn");
-    std::vector<std::string> alpnList;
-    if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
-    }
+    alpn = getUrlArg(addition, "alpn");
     sni = getUrlArg(addition, "sni");
     congestion_control = getUrlArg(addition, "congestion_control");
     if (remarks.empty())
         remarks = add + ":" + port;
-    tuicConstruct(node, TUIC_DEFAULT_GROUP, remarks, add, port, password, congestion_control, alpnList, sni, uuid, "native",
+    tuicConstruct(node, TUIC_DEFAULT_GROUP, remarks, add, port, password, congestion_control, alpn, sni, uuid, "native",
                   "",
                   tribool(),
                   tribool(), scv);
