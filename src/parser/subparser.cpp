@@ -3356,7 +3356,13 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
         add = add.substr(1, add.length() - 2);
 
     scv = getUrlArg(addition, "insecure");
-    alpn = getUrlArg(addition, "alpn");
+    // alpn = getUrlArg(addition, "alpn");
+    std::string alpnRaw = getUrlArg(addition, "alpn");
+    std::vector<std::string> alpnList;
+    if (!alpnRaw.empty()) {
+        std::string decodedAlpn = urlDecode(alpnRaw);
+        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+    }
     sni = getUrlArg(addition, "sni");
     congestion_control = getUrlArg(addition, "congestion_control");
     if (remarks.empty())
@@ -3408,7 +3414,9 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
 
     std::string alpn = getUrlArg(addition, "alpn");
     if (!alpn.empty()) {
-        auto alpns = split(alpn, ",");
+        std::string decodedAlpn = urlDecode(alpn);
+        auto alpns = split(decodedAlpn, ",");
+        // auto alpns = split(alpn, ",");
         for (auto &item : alpns) {
             if (!item.empty())
                 alpnList.emplace_back(item);
