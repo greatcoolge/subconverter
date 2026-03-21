@@ -3429,7 +3429,6 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
     return;
 }
 
-void explodeAnyTLS(std::string anytls, Proxy &node) {
     std::string add, port, password, remarks, addition, sni, fp;
     std::vector<std::string> alpnList;
     tribool udp, tfo, scv;
@@ -3450,13 +3449,13 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
 
     pos = anytls.find("@");
     if (pos != anytls.npos) {
-        password = anytls.substr(0, pos);
+        password = urlDecode(anytls.substr(0, pos));
         anytls = anytls.substr(pos + 1);
     }
 
     pos = anytls.rfind(":");
     if (pos != anytls.npos) {
-        add = anytls.substr(0, pos);
+        add = urlDecode(anytls.substr(0, pos));
         port = anytls.substr(pos + 1);
     }
 
@@ -3467,28 +3466,22 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
         remarks = add + ":" + port;
 
     std::string alpn = getUrlArg(addition, "alpn");
-    if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        // auto alpns = split(decodedAlpn, ",");
-        auto alpns = split(alpn, ",");
-        for (auto &item : alpns) {
-            if (!item.empty())
-                alpnList.emplace_back(item);
-        }
-    }
+    sni = urlDecode(getUrlArg(addition, "sni"));
+    if (sni.empty()) sni = urlDecode(getUrlArg(addition, "peer"));
+    fp = urlDecode(getUrlArg(addition, "fp"));
+    if (fp.empty()) fp = urlDecode(getUrlArg(addition, "fingerprint"));
+    if (fp.empty()) fp = urlDecode(getUrlArg(addition, "hpkp"));
 
-    fp = getUrlArg(addition, "fp");
-    if (fp.empty())
-        fp = getUrlArg(addition, "fingerprint");
-    if (fp.empty())
-        fp = urlDecode(getUrlArg(addition, "hpkp"));
-    sni = getUrlArg(addition, "sni");
-    if (sni.empty())
-        sni = getUrlArg(addition, "peer");
+    
     udp = getUrlArg(addition, "udp");
     tfo = getUrlArg(addition, "tfo");
     scv = getUrlArg(addition, "insecure");
 
+    // decode ALPN
+    if (!alpn.empty()) {
+        alpnList = split(urlDecode(alpn), ",");
+    }
+    
     anyTlSConstruct(node, ANYTLS_DEFAULT_GROUP, remarks, port, password, add, alpnList, fp, sni, udp, tfo, scv,
                     tribool(), "", 30, 30, 0);
 }
