@@ -3420,8 +3420,8 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     if (!alpn.empty()) {
         std::string decodedAlpn = urlDecode(alpn);
-        auto alpns = split(decodedAlpn, ",");
-        // auto alpns = split(alpn, ",");
+        // auto alpns = split(decodedAlpn, ",");
+        auto alpns = split(alpn, ",");
         for (auto &item : alpns) {
             if (!item.empty())
                 alpnList.emplace_back(item);
