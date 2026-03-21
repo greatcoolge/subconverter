@@ -1624,47 +1624,45 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 singleproxy["alterId"] >>= aid;
                 net = singleproxy["network"].IsDefined() ? safe_as<std::string>(singleproxy["network"]) : "tcp";
                 sni = singleproxy["sni"].IsDefined()
-                          ? safe_as<std::string>(singleproxy["sni"])
-                          : safe_as<std::string>(
-                              singleproxy["servername"]);
+                          ? decodeYamlString(singleproxy["sni"])
+                          : decodeYamlString(singleproxy["servername"]);
                 switch (hash_(net)) {
                     case "tcp"_hash:
                     case "http"_hash:
-                        singleproxy["http-opts"]["path"][0] >>= path;
-                        singleproxy["http-opts"]["headers"]["Host"][0] >>= host;
+                        path = decodeYamlString(singleproxy["http-opts"]["path"][0]);
+                        host = decodeYamlString(singleproxy["http-opts"]["headers"]["Host"][0]);
                         edge.clear();
                         break;
                     case "ws"_hash:
                         if (singleproxy["ws-opts"].IsDefined()) {
                             path = singleproxy["ws-opts"]["path"].IsDefined()
-                                       ? safe_as<std::string>(
-                                           singleproxy["ws-opts"]["path"])
+                                       ? decodeYamlString(singleproxy["ws-opts"]["path"])
                                        : "/";
-                            singleproxy["ws-opts"]["headers"]["Host"] >>= host;
+                            host = decodeYamlString(singleproxy["ws-opts"]["headers"]["Host"]);
                             if (host.empty()) {
-                                singleproxy["ws-opts"]["headers"]["host"] >>= host;
+                                host = decodeYamlString(singleproxy["ws-opts"]["headers"]["host"]);
                             }
-                            singleproxy["ws-opts"]["headers"]["Edge"] >>= edge;
+                            edge = decodeYamlString(singleproxy["ws-opts"]["headers"]["Edge"]);
                             if (singleproxy["ws-opts"]["v2ray-http-upgrade"].IsDefined()) {
-                                v2ray_http_upgrade = safe_as<std::string>(singleproxy["ws-opts"]["v2ray-http-upgrade"]);
+                                v2ray_http_upgrade = decodeYamlString(singleproxy["ws-opts"]["v2ray-http-upgrade"]);
                             }
                         } else {
                             path = singleproxy["ws-path"].IsDefined()
-                                       ? safe_as<std::string>(singleproxy["ws-path"])
+                                       ? decodeYamlString(singleproxy["ws-path"])
                                        : "/";
-                            singleproxy["ws-headers"]["Host"] >>= host;
-                            singleproxy["ws-headers"]["Edge"] >>= edge;
+                            host = decodeYamlString(singleproxy["ws-headers"]["Host"]);
+                            edge = decodeYamlString(singleproxy["ws-headers"]["Edge"]);
                         }
 
                         break;
                     case "h2"_hash:
-                        singleproxy["h2-opts"]["path"] >>= path;
-                        singleproxy["h2-opts"]["host"][0] >>= host;
+                        path = decodeYamlString(singleproxy["h2-opts"]["path"]);
+                        host = decodeYamlString(singleproxy["h2-opts"]["host"][0]);
                         edge.clear();
                         break;
                     case "grpc"_hash:
-                        singleproxy["servername"] >>= host;
-                        singleproxy["grpc-opts"]["grpc-service-name"] >>= path;
+                        host = decodeYamlString(singleproxy["servername"]);
+                        path = decodeYamlString(singleproxy["grpc-opts"]["grpc-service-name"]);
                         edge.clear();
                         break;
                     default:
@@ -1674,11 +1672,11 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 tls = safe_as<std::string>(singleproxy["tls"]) == "true" ? "tls" : "";
                 if (singleproxy["reality-opts"].IsDefined()) {
                     host = singleproxy["sni"].IsDefined()
-                               ? safe_as<std::string>(singleproxy["sni"])
-                               : safe_as<std::string>(singleproxy["servername"]);
+                               ? decodeYamlString(singleproxy["sni"])
+                               : decodeYamlString(singleproxy["servername"]);
                     printf("host:%s", host.c_str());
-                    singleproxy["reality-opts"]["public-key"] >>= pbk;
-                    singleproxy["reality-opts"]["short-id"] >>= sid;
+                    pbk = decodeYamlString(singleproxy["reality-opts"]["public-key"]);
+                    sid = decodeYamlString(singleproxy["reality-opts"]["short-id"]);
                 }
                 flow = decodeYamlString(singleproxy["flow"]);
                 fp = decodeYamlString(singleproxy["client-fingerprint"]);
