@@ -1969,8 +1969,10 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
     if (strFind(hysteria2, "@")) {
         if (regGetMatch(hysteria2, R"(^(.*?)@(.*)[:](\d+)$)", 4, 0, &password, &add, &port))
             return;
+        password = urlDecode(password);
+        add = urlDecode(add);
     } else {
-        password = getUrlArg(addition, "password");
+        password = urlDecode(getUrlArg(addition, "password"));
         if (password.empty())
             return;
 
@@ -1979,16 +1981,17 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
 
         if (regGetMatch(hysteria2, R"(^(.*)[:](\d+)$)", 3, 0, &add, &port))
             return;
+        add = urlDecode(add);
     }
 
     scv = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "up");
     down = getUrlArg(addition, "down");
-    alpn = getUrlArg(addition, "alpn");
-    obfsParam = getUrlArg(addition, "obfs");
-    obfsPassword = getUrlArg(addition, "obfs-password");
-    host = getUrlArg(addition, "sni");
-    sni = getUrlArg(addition, "sni");
+    alpn = urlDecode(getUrlArg(addition, "alpn"));
+    obfsParam = urlDecode(getUrlArg(addition, "obfs"));
+    obfsPassword = urlDecode(getUrlArg(addition, "obfs-password"));
+    host = urlDecode(getUrlArg(addition, "sni"));
+    sni = urlDecode(getUrlArg(addition, "sni"));
     ports = getUrlArg(addition, "ports");
     if (remarks.empty())
         remarks = add + ":" + port;
