@@ -49,6 +49,41 @@ std::string removeBrackets(const std::string& input) {
 
     return result;
 }
+
+// 通用字符串解码函数  
+std::string decodeYamlString(const YAML::Node &node) {  
+    if (node.IsNull() || !node.IsScalar())  
+        return "";  
+      
+    std::string value = node.as<std::string>();  
+    return urlDecode(value);  
+}  
+  
+// 通用ALPN解码函数    
+std::vector<std::string> decodeYamlAlpn(const YAML::Node &node) {  
+    std::vector<std::string> result;  
+      
+    if (node.IsNull())  
+        return result;  
+          
+    if (node.IsScalar()) {  
+        // 单个字符串格式  
+        std::string alpnStr = urlDecode(node.as<std::string>());  
+        if (!alpnStr.empty()) {  
+            result = split(alpnStr, ",");  
+        }  
+    } else if (node.IsSequence()) {  
+        // 数组格式  
+        for (const auto &item : node) {  
+            if (item.IsScalar()) {  
+                result.push_back(urlDecode(item.as<std::string>()));  
+            }  
+        }  
+    }  
+      
+    return result;  
+}
+
 void commonConstruct(Proxy &node, ProxyType type, const std::string &group, const std::string &remarks,
                      const std::string &server, const std::string &port, const tribool &udp, const tribool &tfo,
                      const tribool &scv, const tribool &tls13, const std::string &underlying_proxy) {
