@@ -2038,30 +2038,34 @@ void explodeStdVless(std::string vless, Proxy &node) {
     switch (hash_(net)) {
         case "tcp"_hash:
         case "ws"_hash:
-        case "h2"_hash:
+        case "h2"_hash: {
             type = urlDecode(getUrlArg(addition, "headerType"));
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
             path = urlDecode(getUrlArg(addition, "path"));
             break;
-        case "xhttp"_hash: // 新增对 type=xhttp 的支持
+        }
+        case "xhttp"_hash: { // 新增对 type=xhttp 的支持
             net = "h2"; // 视为 h2/http2 传输
             type = urlDecode(getUrlArg(addition, "headerType"));
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
             path = urlDecode(getUrlArg(addition, "path"));
             break;
-        case "grpc"_hash:
+        }
+        case "grpc"_hash: {
             host = urlDecode(getUrlArg(addition, "sni"));
             path = urlDecode(getUrlArg(addition, "serviceName"));
             mode = urlDecode(getUrlArg(addition, "mode"));
             break;
-        case "quic"_hash:
+        }
+        case "quic"_hash: {
             type = urlDecode(getUrlArg(addition, "headerType"));
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "quicSecurity") : sni_val);
             path = urlDecode(getUrlArg(addition, "key"));
             break;
+        }
         default:
             return;
     }
