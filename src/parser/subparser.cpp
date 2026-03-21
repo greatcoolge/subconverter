@@ -1924,15 +1924,19 @@ void explodeStdMieru(std::string mieru, Proxy &node) {
     if (regGetMatch(mieru, R"(^(.*?):(.*?)@(.*)$)", 4, 0, &username, &password, &host))
         return;
 
+    username = urlDecode(username);
+    password = urlDecode(password);
+    host = urlDecode(host);
+    
     // 提取端口（port=多个情况）
     port = getUrlArg(addition, "port");
     if (port.find('-') != std::string::npos) {
         ports = port;
     }
     // 提取协议（多个 protocol）
-    protocol = getUrlArg(addition, "protocol");
+    protocol = urlDecode(getUrlArg(addition, "protocol"));
 
-    multiplexing = getUrlArg(addition, "multiplexing");
+    multiplexing = urlDecode(getUrlArg(addition, "multiplexing"));
     mtu = getUrlArg(addition, "mtu");
 
     if (remarks.empty())
