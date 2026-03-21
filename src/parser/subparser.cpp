@@ -2019,44 +2019,48 @@ void explodeStdVless(std::string vless, Proxy &node) {
     if (regGetMatch(vless, stdvless_matcher, 5, 0, &id, &add, &port, &addition))
         return;
 
-    tls = getUrlArg(addition, "security");
-    net = getUrlArg(addition, "type");
-    flow = getUrlArg(addition, "flow");
-    pbk = getUrlArg(addition, "pbk");
-    sid = getUrlArg(addition, "sid");
-    encryption = getUrlArg(addition, "encryption");
-    fp = getUrlArg(addition, "fp");
-    std::string packet_encoding = getUrlArg(addition, "packet-encoding");
+    add = urlDecode(add);
+    tls = urlDecode(getUrlArg(addition, "security"));
+    net = urlDecode(getUrlArg(addition, "type"));
+    flow = urlDecode(getUrlArg(addition, "flow"));
+    pbk = urlDecode(getUrlArg(addition, "pbk"));
+    sid = urlDecode(getUrlArg(addition, "sid"));
+    encryption = urlDecode(getUrlArg(addition, "encryption"));
+    fp = urlDecode(getUrlArg(addition, "fp"));
+
+    std::string packet_encoding = urlDecode(getUrlArg(addition, "packet-encoding"));
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        alpnList = split(urlDecode(alpn), ",");
         // alpnList.push_back(alpn);
     }
     switch (hash_(net)) {
         case "tcp"_hash:
         case "ws"_hash:
         case "h2"_hash:
-            type = getUrlArg(addition, "headerType");
-            host = getUrlArg(addition, strFind(addition, "sni") ? "sni" : "host");
-            path = getUrlArg(addition, "path");
+            type = urlDecode(getUrlArg(addition, "headerType"));
+            std::string sni_val = getUrlArg(addition, "sni");
+            host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
+            path = urlDecode(getUrlArg(addition, "path"));
             break;
         case "xhttp"_hash: // 新增对 type=xhttp 的支持
             net = "h2"; // 视为 h2/http2 传输
-            type = getUrlArg(addition, "headerType");
-            host = getUrlArg(addition, strFind(addition, "sni") ? "sni" : "host");
-            path = getUrlArg(addition, "path");
+            type = urlDecode(getUrlArg(addition, "headerType"));
+            std::string sni_val = getUrlArg(addition, "sni");
+            host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
+            path = urlDecode(getUrlArg(addition, "path"));
             break;
         case "grpc"_hash:
-            host = getUrlArg(addition, "sni");
-            path = getUrlArg(addition, "serviceName");
-            mode = getUrlArg(addition, "mode");
+            host = urlDecode(getUrlArg(addition, "sni"));
+            path = urlDecode(getUrlArg(addition, "serviceName"));
+            mode = urlDecode(getUrlArg(addition, "mode"));
             break;
         case "quic"_hash:
-            type = getUrlArg(addition, "headerType");
-            host = getUrlArg(addition, strFind(addition, "sni") ? "sni" : "quicSecurity");
-            path = getUrlArg(addition, "key");
+            type = urlDecode(getUrlArg(addition, "headerType"));
+            std::string sni_val = getUrlArg(addition, "sni");
+            host = urlDecode(sni_val.empty() ? getUrlArg(addition, "quicSecurity") : sni_val);
+            path = urlDecode(getUrlArg(addition, "key"));
             break;
         default:
             return;
@@ -2064,7 +2068,7 @@ void explodeStdVless(std::string vless, Proxy &node) {
 
     if (remarks.empty())
         remarks = add + ":" + port;
-    sni = getUrlArg(addition, "sni");
+    sni = urlDecode(getUrlArg(addition, "sni"));
     vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, "auto", flow, mode, path, host, "",
                    tls, pbk, sid, fp, sni, alpnList, packet_encoding, encryption);
     return;
