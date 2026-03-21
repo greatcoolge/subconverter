@@ -3412,10 +3412,13 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
     if (add.length() > 2 && add.front() == '[' && add.back() == ']')
         add = add.substr(1, add.length() - 2);
 
+    uuid = urlDecode(uuid);
+    password = urlDecode(password);
+    add = urlDecode(add);
     scv = getUrlArg(addition, "insecure");
-    alpn = getUrlArg(addition, "alpn");
-    sni = getUrlArg(addition, "sni");
-    congestion_control = getUrlArg(addition, "congestion_control");
+    alpn = urlDecode(getUrlArg(addition, "alpn"));
+    sni = urlDecode(getUrlArg(addition, "sni"));
+    congestion_control = urlDecode(getUrlArg(addition, "congestion_control"));
     if (remarks.empty())
         remarks = add + ":" + port;
     tuicConstruct(node, TUIC_DEFAULT_GROUP, remarks, add, port, password, congestion_control, alpn, sni, uuid, "native",
