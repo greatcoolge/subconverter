@@ -3432,8 +3432,8 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
 
     return;
 }
-
-    std::string add, port, password, remarks, addition, sni, fp;
+void explodeAnyTLS(std::string anytls, Proxy &node) {
+    std::string add, port, password, remarks, addition, sni, fp, alpn;
     std::vector<std::string> alpnList;
     tribool udp, tfo, scv;
     anytls = anytls.substr(9);
