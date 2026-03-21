@@ -1691,23 +1691,23 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 break;
             case "hysteria"_hash:
                 group = HYSTERIA_DEFAULT_GROUP;
-                singleproxy["auth_str"] >> auth;
+                auth = decodeYamlString(singleproxy["auth_str"]);
                 if (auth.empty()) {
-                    singleproxy["auth-str"] >> auth;
+                    auth = decodeYamlString(singleproxy["auth-str"]);
                     if (auth.empty()) {
-                        singleproxy["password"] >> auth;
+                        auth = decodeYamlString(singleproxy["password"]);
                     }
                 }
-                singleproxy["up"] >> up;
-                singleproxy["down"] >> down;
-                singleproxy["obfs"] >> obfsParam;
-                singleproxy["protocol"] >> type;
-                singleproxy["sni"] >> host;
+                up = decodeYamlString(singleproxy["up"]);
+                down = decodeYamlString(singleproxy["down"]);
+                obfsParam = decodeYamlString(singleproxy["obfs"]);
+                type = decodeYamlString(singleproxy["protocol"]);
+                host = decodeYamlString(singleproxy["sni"]);
                 alpnList = decodeYamlAlpn(singleproxy["alpn"]);
                 if (!alpnList.empty())
-                     alpn = alpnList[0];
-                singleproxy["protocol"] >> insecure;
-                singleproxy["ports"] >> ports;
+                    alpn = alpnList[0];
+                insecure = decodeYamlString(singleproxy["protocol"]);
+                ports = decodeYamlString(singleproxy["ports"]);
                 sni = host;
                 hysteriaConstruct(node, group, ps, server, port, type, auth, "", host, up, down, alpn, obfsParam,
                                   insecure, ports, sni,
@@ -1715,11 +1715,11 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 break;
             case "hysteria2"_hash:
                 group = HYSTERIA2_DEFAULT_GROUP;
-                singleproxy["password"] >>= password;
+                password = decodeYamlString(singleproxy["password"]);
                 if (password.empty())
-                    singleproxy["auth"] >>= password;
+                    password = decodeYamlString(singleproxy["auth"]);
                 if (singleproxy["up"].IsDefined()) {
-                    singleproxy["up"] >>= up;
+                    up = decodeYamlString(singleproxy["up"]);
                     if (up.empty()) {
                         try {
                             up = singleproxy["up"].as<std::string>();
@@ -1728,7 +1728,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                     }
                 }
                 if (singleproxy["down"].IsDefined()) {
-                    singleproxy["down"] >>= down;
+                    down = decodeYamlString(singleproxy["down"]);
                     if (down.empty()) {
                         try {
                             down = singleproxy["down"].as<std::string>();
@@ -1736,12 +1736,11 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                         }
                     }
                 }
-                singleproxy["obfs"] >>= obfsParam;
-                singleproxy["obfs-password"] >>= obfsPassword;
-                singleproxy["sni"] >>= host;
-                singleproxy["alpn"][0] >>= alpn;
+                obfsParam = decodeYamlString(singleproxy["obfs"]);
+                obfsPassword = decodeYamlString(singleproxy["obfs-password"]);
+                host = decodeYamlString(singleproxy["sni"]);
                 alpn = decodeYamlAlpnSingle(singleproxy["alpn"]);
-                singleproxy["ports"] >> ports;
+                ports = decodeYamlString(singleproxy["ports"]);
                 sni = host;
                 hysteria2Construct(node, group, ps, server, port, password, host, up, down, alpn, obfsParam,
                                    obfsPassword, sni, public_key, ports, udp, tfo, scv, underlying_proxy);
@@ -1749,17 +1748,17 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
             case "tuic"_hash:
                 group = TUIC_DEFAULT_GROUP;
                 uint16_t request_timeout;
-                singleproxy["password"] >>= password;
-                singleproxy["uuid"] >>= id;
-                singleproxy["congestion-controller"] >>= congestion_control;
-                singleproxy["udp-relay-mode"] >>= udp_relay_mode;
-                singleproxy["sni"] >>= sni;
+                password = decodeYamlString(singleproxy["password"]);
+                id = decodeYamlString(singleproxy["uuid"]);
+                congestion_control = decodeYamlString(singleproxy["congestion-controller"]);
+                udp_relay_mode = decodeYamlString(singleproxy["udp-relay-mode"]);
+                sni = decodeYamlString(singleproxy["sni"]);
                 if (!singleproxy["alpn"].IsNull()) {
-                    singleproxy["alpn"][0] >>= alpn;
+                    alpn = decodeYamlString(singleproxy["alpn"][0]);
                 }
                 singleproxy["disable-sni"] >>= disableSni;
                 singleproxy["reduce-rtt"] >>= reduceRtt;
-                singleproxy["token"] >>= token;
+                token = decodeYamlString(singleproxy["token"]);
                 singleproxy["request-timeout"] >>= request_timeout;
                 tuicConstruct(node, TUIC_DEFAULT_GROUP, ps, server, port, password, congestion_control, alpn, sni, id,
                               udp_relay_mode, token,
@@ -1769,33 +1768,33 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 break;
             case "anytls"_hash:
                 group = ANYTLS_DEFAULT_GROUP;
-                singleproxy["password"] >>= password;
-                singleproxy["sni"] >>= sni;
+                password = decodeYamlString(singleproxy["password"]);
+                sni = decodeYamlString(singleproxy["sni"]);
 
                 if (!singleproxy["alpn"].IsNull() && singleproxy["alpn"].size() >= 1) {
-                    singleproxy["alpn"][0] >>= alpn;
+                    alpn = decodeYamlString(singleproxy["alpn"][0]);
                     alpns.push_back(alpn);
                     if (singleproxy["alpn"].size() >= 2 && !singleproxy["alpn"][1].IsNull()) {
-                        singleproxy["alpn"][1] >>= alpn2;
+                        alpn2 = decodeYamlString(singleproxy["alpn"][1]);
                         alpns.push_back(alpn2);
                     }
                 }
-                singleproxy["fingerprint"] >>= fingerprint;
+                fingerprint = decodeYamlString(singleproxy["fingerprint"]);
                 anyTlSConstruct(node, ANYTLS_DEFAULT_GROUP, ps, port, password, server, alpns, fingerprint, sni,
                                 udp,
                                 tribool(), scv, tribool(), underlying_proxy, 30, 30, 0);
                 break;
             case "mieru"_hash:
                 group = MIERU_DEFAULT_GROUP;
-                singleproxy["password"] >>= password;
-                singleproxy["username"] >>= user;
-                singleproxy["port-range"] >>= ports;
+                password = decodeYamlString(singleproxy["password"]);
+                user = decodeYamlString(singleproxy["username"]);
+                ports = decodeYamlString(singleproxy["port-range"]);
                 if (!singleproxy["multiplexing"].IsNull()) {
-                    singleproxy["multiplexing"] >>= multiplexing;
+                    multiplexing = decodeYamlString(singleproxy["multiplexing"]);
                 }
                 transfer_protocol = "TCP";
                 if (!singleproxy["transport"].IsNull()) {
-                    singleproxy["transport"] >>= transfer_protocol;
+                    transfer_protocol = decodeYamlString(singleproxy["transport"]);
                 }
                 mieruConstruct(node, MIERU_DEFAULT_GROUP, ps, port, password, server, ports, user, multiplexing,
                                transfer_protocol,
