@@ -1704,10 +1704,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 type = decodeYamlString(singleproxy["protocol"]);
                 host = decodeYamlString(singleproxy["sni"]);
                 alpnList = decodeYamlAlpn(singleproxy["alpn"]);
-                if (!alpnList.empty())
-                        alpn = alpnList[0];  // 取第一个元素
-                    else
-                        alpn.clear();
+                alpn = alpnList.empty() ? "" : alpnList[0];
                 insecure = decodeYamlString(singleproxy["protocol"]);
                 ports = decodeYamlString(singleproxy["ports"]);
                 sni = host;
@@ -1741,7 +1738,8 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 obfsParam = decodeYamlString(singleproxy["obfs"]);
                 obfsPassword = decodeYamlString(singleproxy["obfs-password"]);
                 host = decodeYamlString(singleproxy["sni"]);
-                alpn = decodeYamlAlpn(singleproxy["alpn"]);
+                alpn = decodeYamlString(singleproxy["alpn"]);
+                if (alpn.empty()) alpn = "";  // 防空
                 ports = decodeYamlString(singleproxy["ports"]);
                 sni = host;
                 hysteria2Construct(node, group, ps, server, port, password, host, up, down, alpn, obfsParam,
