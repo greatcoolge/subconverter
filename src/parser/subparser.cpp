@@ -1831,29 +1831,29 @@ void explodeStdVMess(std::string vmess, Proxy &node) {
     switch (hash_(net)) {
         case "tcp"_hash:
         case "kcp"_hash:
-            type = getUrlArg(addition, "type");
+            type = urlDecode(getUrlArg(addition, "type"));
             break;
         case "http"_hash:
         case "ws"_hash:
-            host = getUrlArg(addition, "host");
-            path = getUrlArg(addition, "path");
+            host = urlDecode(getUrlArg(addition, "host"));
+            path = urlDecode(getUrlArg(addition, "path"));
             break;
         case "quic"_hash:
-            type = getUrlArg(addition, "security");
-            host = getUrlArg(addition, "type");
-            path = getUrlArg(addition, "key");
+            type = urlDecode(getUrlArg(addition, "security"));
+            host = urlDecode(getUrlArg(addition, "type"));
+            path = urlDecode(getUrlArg(addition, "key"));
             break;
         default:
             return;
     }
 
+    add = urlDecode(add);
     if (remarks.empty())
         remarks = add + ":" + port;
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        alpnList = split(urlDecode(alpn), ",");
         // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, "auto", path, host, "", tls, "",
