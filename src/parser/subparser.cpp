@@ -2075,31 +2075,35 @@ void explodeStdVless(std::string vless, Proxy &node) {
 }
 
 void explodeShadowrocket(std::string rocket, Proxy &node) {
-    std::string add, port, type, id, aid, net = "tcp", path, host, tls, cipher, remarks;
+    std::string add, port, type = "none", id, aid, net = "tcp", path, host, tls, cipher, remarks;
     std::string obfs; //for other style of link
     std::string addition;
     rocket = rocket.substr(8);
 
     string_size pos = rocket.find('?');
-    addition = rocket.substr(pos + 1);
-    rocket.erase(pos);
+    if (pos != std::string::npos) {
+        addition = rocket.substr(pos + 1);
+        rocket.erase(pos);
+    }
 
     if (regGetMatch(urlSafeBase64Decode(rocket), "(.*?):(.*)@(.*):(.*)", 5, 0, &cipher, &id, &add, &port))
         return;
+    add = urlDecode(add);
+    id = urlDecode(id);
     if (port == "0")
         return;
     remarks = urlDecode(getUrlArg(addition, "remarks"));
     obfs = getUrlArg(addition, "obfs");
     if (!obfs.empty()) {
-        if (obfs == "websocket") {
+        if (obfs == "websocket" || obfs == "ws") {
             net = "ws";
-            host = getUrlArg(addition, "obfsParam");
-            path = getUrlArg(addition, "path");
+            host = urlDecode(getUrlArg(addition, "obfsParam"));
+            path = urlDecode(getUrlArg(addition, "path"));
         }
     } else {
-        net = getUrlArg(addition, "network");
-        host = getUrlArg(addition, "wsHost");
-        path = getUrlArg(addition, "wspath");
+        net = urlDecode(getUrlArg(addition, "network"));
+        host = urlDecode(getUrlArg(addition, "wsHost"));
+        path = urlDecode(getUrlArg(addition, "wspath"));
     }
     tls = getUrlArg(addition, "tls") == "1" ? "tls" : "";
     aid = getUrlArg(addition, "aid");
@@ -2112,8 +2116,7 @@ void explodeShadowrocket(std::string rocket, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        alpnList = split(urlDecode(alpn), ",");
         // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls, "",
@@ -2154,8 +2157,7 @@ void explodeKitsunebi(std::string kit, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        std::string decodedAlpn = urlDecode(alpn);
-        alpnList = split(decodedAlpn, ","); // 按逗号拆分成多个 ALPN
+        alpnList = split(urlDecode(alpn), ",");
         // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls, "",
