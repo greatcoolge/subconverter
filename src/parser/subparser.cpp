@@ -1739,7 +1739,7 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 obfsParam = decodeYamlString(singleproxy["obfs"]);
                 obfsPassword = decodeYamlString(singleproxy["obfs-password"]);
                 host = decodeYamlString(singleproxy["sni"]);
-                alpn = decodeYamlAlpnSingle(singleproxy["alpn"]);
+                alpn = decodeYamlAlpn(singleproxy["alpn"]);
                 ports = decodeYamlString(singleproxy["ports"]);
                 sni = host;
                 hysteria2Construct(node, group, ps, server, port, password, host, up, down, alpn, obfsParam,
