@@ -1875,16 +1875,16 @@ void explodeStdHysteria(std::string hysteria, Proxy &node) {
     const std::string stdhysteria_matcher = R"(^(.*)[:](\d+)[?](.*)$)";
     if (regGetMatch(hysteria, stdhysteria_matcher, 4, 0, &add, &port, &addition))
         return;
-    type = getUrlArg(addition, "protocol");
-    auth = getUrlArg(addition, "auth");
-    auth_str = getUrlArg(addition, "auth_str");
-    host = getUrlArg(addition, "peer");
+    type = urlDecode(getUrlArg(addition, "protocol"));
+    auth = urlDecode(getUrlArg(addition, "auth"));
+    auth_str = urlDecode(getUrlArg(addition, "auth_str"));
+    host = urlDecode(getUrlArg(addition, "peer"));
     insecure = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "upmbps");
     down = getUrlArg(addition, "downmbps");
-    alpn = getUrlArg(addition, "alpn");
-    obfsParam = getUrlArg(addition, "obfsParam");
-    sni = getUrlArg(addition, "peer");
+    alpn = urlDecode(getUrlArg(addition, "alpn"));
+    obfsParam = urlDecode(getUrlArg(addition, "obfsParam"));
+    sni = urlDecode(getUrlArg(addition, "peer"));
 
     if (remarks.empty())
         remarks = add + ":" + port;
