@@ -1705,7 +1705,9 @@ void explodeClash(Node yamlnode, std::vector<Proxy> &nodes) {
                 host = decodeYamlString(singleproxy["sni"]);
                 alpnList = decodeYamlAlpn(singleproxy["alpn"]);
                 if (!alpnList.empty())
-                    alpn = alpnList[0];
+                        alpn = alpnList[0];  // 取第一个元素
+                    else
+                        alpn.clear();
                 insecure = decodeYamlString(singleproxy["protocol"]);
                 ports = decodeYamlString(singleproxy["ports"]);
                 sni = host;
