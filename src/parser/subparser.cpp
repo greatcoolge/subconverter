@@ -3469,7 +3469,7 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
     if (remarks.empty())
         remarks = add + ":" + port;
 
-    std::string alpn = getUrlArg(addition, "alpn");
+    alpn = getUrlArg(addition, "alpn");
     sni = urlDecode(getUrlArg(addition, "sni"));
     if (sni.empty()) sni = urlDecode(getUrlArg(addition, "peer"));
     fp = urlDecode(getUrlArg(addition, "fp"));
