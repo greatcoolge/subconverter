@@ -2546,6 +2546,7 @@ void explodeStdMieru(std::string mieru, Proxy &node) {
     tribool udp, tfo, scv, tls13;
 
     // 去除前缀
+    mieru = mieru.substr(8);
     string_size pos;
 
     // 提取 remarks
