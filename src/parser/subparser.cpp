@@ -1704,12 +1704,12 @@ void explodeHTTPSub(std::string link, Proxy &node) {
 void explodeTrojan(std::string trojan, Proxy &node) {
     std::string server, port, psk, addition, group, remark, host, path, network, fp, sni;
     tribool tfo, scv;
-    if (startsWith(trojan, "trojan://")) {
-        trojan.erase(0, 9);
-    }
-    if (startsWith(trojan, "trojan-go://")) {
+
+    if (startsWith(trojan, "trojan-go://"))
         trojan.erase(0, 12);
-    }
+    else if (startsWith(trojan, "trojan://"))
+        trojan.erase(0, 9);
+
     string_size pos = trojan.rfind('#');
     if (pos != std::string::npos) {
         remark = urlDecode(trojan.substr(pos + 1));
@@ -1726,45 +1726,35 @@ void explodeTrojan(std::string trojan, Proxy &node) {
     if (port == "0")
         return;
 
-    host = getUrlArg(addition, "sni");
-    sni = getUrlArg(addition, "sni");
-    host = getUrlArg(addition, "host");
-    if (host.empty())
-        host = sni;
-    if (host.empty())
-        host = getUrlArg(addition, "peer");
+    psk = urlDecode(psk);
+    sni = urlDecode(getUrlArg(addition, "sni"));
+    host = urlDecode(getUrlArg(addition, "host"));
+    if (host.empty()) host = sni;
+    if (host.empty()) host = urlDecode(getUrlArg(addition, "peer"));
+
+    fp = urlDecode(getUrlArg(addition, "fp"));
     tfo = getUrlArg(addition, "tfo");
-    fp = getUrlArg(addition, "fp");
     scv = getUrlArg(addition, "allowInsecure");
     group = urlDecode(getUrlArg(addition, "group"));
 
-    if (getUrlArg(addition, "ws") == "1") {
-        path = getUrlArg(addition, "wspath");
+    const std::string type = getUrlArg(addition, "type");
+    if (getUrlArg(addition, "ws") == "1" || type == "ws") {
+        path = urlDecode(getUrlArg(addition, "path"));
+        if (path.empty()) path = urlDecode(getUrlArg(addition, "wspath"));
         network = "ws";
-    }
-    // support the trojan link format used by v2ryaN and X-ui.
-    // format: trojan://{password}@{server}:{port}?type=ws&security=tls&path={path (urlencoded)}&sni={host}#{name}
-    else if (getUrlArg(addition, "type") == "ws") {
-        path = getUrlArg(addition, "path");
-        if (path.substr(0, 3) == "%2F")
-            path = urlDecode(path);
-        network = "ws";
+    } else if (type == "grpc") {
+        path = urlDecode(getUrlArg(addition, "serviceName"));
+        network = "grpc";
     }
 
-    else if (getUrlArg(addition, "type") == "grpc") {  
-        path = getUrlArg(addition, "serviceName");  
-        network = "grpc";  
-    }
-    
-    if (remark.empty())
-        remark = server + ":" + port;
-    if (group.empty())
-        group = TROJAN_DEFAULT_GROUP;
+    if (remark.empty()) remark = server + ":" + port;
+    if (group.empty()) group = TROJAN_DEFAULT_GROUP;
+
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
-    if (!alpn.empty()) {
-        alpnList.push_back(alpn);
-    }
+    if (!alpn.empty())
+        alpnList = split(urlDecode(alpn), ",");
+
     trojanConstruct(node, group, remark, server, port, psk, network, host, path, fp, sni, alpnList, true, tribool(),
                     tfo, scv);
 }
