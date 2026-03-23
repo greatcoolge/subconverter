@@ -820,7 +820,8 @@ static void parseVmessOutbounds(const rapidjson::Value &nodejson,
             const std::string      &port)
         {
             const std::string id  = GetMember(user, "id");
-            const std::string aid = GetMember(user, "alterId");
+            // const std::string aid = GetMember(user, "alterId");
+            const std::string aid    = getPortStr(user, "alterId");  // 复用，三种类型全覆盖
             std::string cipher    = GetMember(user, "security");
             if (cipher.empty()) cipher = "auto";
 
@@ -863,7 +864,8 @@ static void parseVlessOutbounds(const rapidjson::Value &nodejson,
             const std::string      &port)
         {
             const std::string id   = GetMember(user, "id");
-            const std::string aid  = GetMember(user, "alterId");
+            // const std::string aid  = GetMember(user, "alterId");
+            const std::string aid    = getPortStr(user, "alterId");  // 复用，三种类型全覆盖
             const std::string flow = GetMember(user, "flow");
             std::string encryption = GetMember(user, "encryption");
             if (encryption.empty()) encryption = "none";
