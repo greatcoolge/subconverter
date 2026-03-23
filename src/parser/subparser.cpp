@@ -2757,7 +2757,7 @@ void explodeKitsunebi(std::string kit, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        alpnList = split(urlDecode(alpn), ",");
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls, "",
                    alpnList);
@@ -4011,10 +4011,13 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
     if (add.length() > 2 && add.front() == '[' && add.back() == ']')
         add = add.substr(1, add.length() - 2);
 
+    uuid = urlDecode(uuid);
+    password = urlDecode(password);
+    add = urlDecode(add);
     scv = getUrlArg(addition, "insecure");
-    alpn = getUrlArg(addition, "alpn");
-    sni = getUrlArg(addition, "sni");
-    congestion_control = getUrlArg(addition, "congestion_control");
+    alpn = urlDecode(getUrlArg(addition, "alpn"));
+    sni = urlDecode(getUrlArg(addition, "sni"));
+    congestion_control = urlDecode(getUrlArg(addition, "congestion_control"));
     if (remarks.empty())
         remarks = add + ":" + port;
     tuicConstruct(node, TUIC_DEFAULT_GROUP, remarks, add, port, password, congestion_control, alpn, sni, uuid, "native",
@@ -4026,7 +4029,7 @@ void explodeTuic(const std::string &tuic, Proxy &node) {
 }
 
 void explodeAnyTLS(std::string anytls, Proxy &node) {
-    std::string add, port, password, remarks, addition, sni, fp;
+    std::string add, port, password, remarks, addition, sni, fp, alpn;
     std::vector<std::string> alpnList;
     tribool udp, tfo, scv;
     anytls = anytls.substr(9);
@@ -4046,13 +4049,13 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
 
     pos = anytls.find("@");
     if (pos != anytls.npos) {
-        password = anytls.substr(0, pos);
+        password = urlDecode(anytls.substr(0, pos));
         anytls = anytls.substr(pos + 1);
     }
 
     pos = anytls.rfind(":");
     if (pos != anytls.npos) {
-        add = anytls.substr(0, pos);
+        add = urlDecode(anytls.substr(0, pos));
         port = anytls.substr(pos + 1);
     }
 
@@ -4062,27 +4065,23 @@ void explodeAnyTLS(std::string anytls, Proxy &node) {
     if (remarks.empty())
         remarks = add + ":" + port;
 
-    std::string alpn = getUrlArg(addition, "alpn");
-    if (!alpn.empty()) {
-        auto alpns = split(alpn, ",");
-        for (auto &item : alpns) {
-            if (!item.empty())
-                alpnList.emplace_back(item);
-        }
-    }
+    alpn = getUrlArg(addition, "alpn");
+    sni = urlDecode(getUrlArg(addition, "sni"));
+    if (sni.empty()) sni = urlDecode(getUrlArg(addition, "peer"));
+    fp = urlDecode(getUrlArg(addition, "fp"));
+    if (fp.empty()) fp = urlDecode(getUrlArg(addition, "fingerprint"));
+    if (fp.empty()) fp = urlDecode(getUrlArg(addition, "hpkp"));
 
-    fp = getUrlArg(addition, "fp");
-    if (fp.empty())
-        fp = getUrlArg(addition, "fingerprint");
-    if (fp.empty())
-        fp = urlDecode(getUrlArg(addition, "hpkp"));
-    sni = getUrlArg(addition, "sni");
-    if (sni.empty())
-        sni = getUrlArg(addition, "peer");
+    
     udp = getUrlArg(addition, "udp");
     tfo = getUrlArg(addition, "tfo");
     scv = getUrlArg(addition, "insecure");
 
+    // decode ALPN
+    if (!alpn.empty()) {
+        alpnList = split(urlDecode(alpn), ",");
+    }
+    
     anyTlSConstruct(node, ANYTLS_DEFAULT_GROUP, remarks, port, password, add, alpnList, fp, sni, udp, tfo, scv,
                     tribool(), "", 30, 30, 0);
 }
