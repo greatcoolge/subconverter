@@ -2426,28 +2426,30 @@ void explodeStdVMess(std::string vmess, Proxy &node) {
     switch (hash_(net)) {
         case "tcp"_hash:
         case "kcp"_hash:
-            type = getUrlArg(addition, "type");
+            type = urlDecode(getUrlArg(addition, "type"));
             break;
         case "http"_hash:
         case "ws"_hash:
-            host = getUrlArg(addition, "host");
-            path = getUrlArg(addition, "path");
+            host = urlDecode(getUrlArg(addition, "host"));
+            path = urlDecode(getUrlArg(addition, "path"));
             break;
         case "quic"_hash:
-            type = getUrlArg(addition, "security");
-            host = getUrlArg(addition, "type");
-            path = getUrlArg(addition, "key");
+            type = urlDecode(getUrlArg(addition, "security"));
+            host = urlDecode(getUrlArg(addition, "type"));
+            path = urlDecode(getUrlArg(addition, "key"));
             break;
         default:
             return;
     }
 
+    add = urlDecode(add);
     if (remarks.empty())
         remarks = add + ":" + port;
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        alpnList = split(urlDecode(alpn), ",");
+        // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, "auto", path, host, "", tls, "",
                    alpnList);
@@ -2468,16 +2470,16 @@ void explodeStdHysteria(std::string hysteria, Proxy &node) {
     const std::string stdhysteria_matcher = R"(^(.*)[:](\d+)[?](.*)$)";
     if (regGetMatch(hysteria, stdhysteria_matcher, 4, 0, &add, &port, &addition))
         return;
-    type = getUrlArg(addition, "protocol");
-    auth = getUrlArg(addition, "auth");
-    auth_str = getUrlArg(addition, "auth_str");
-    host = getUrlArg(addition, "peer");
+    type = urlDecode(getUrlArg(addition, "protocol"));
+    auth = urlDecode(getUrlArg(addition, "auth"));
+    auth_str = urlDecode(getUrlArg(addition, "auth_str"));
+    host = urlDecode(getUrlArg(addition, "peer"));
     insecure = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "upmbps");
     down = getUrlArg(addition, "downmbps");
-    alpn = getUrlArg(addition, "alpn");
-    obfsParam = getUrlArg(addition, "obfsParam");
-    sni = getUrlArg(addition, "peer");
+    alpn = urlDecode(getUrlArg(addition, "alpn"));
+    obfsParam = urlDecode(getUrlArg(addition, "obfsParam"));
+    sni = urlDecode(getUrlArg(addition, "peer"));
 
     if (remarks.empty())
         remarks = add + ":" + port;
@@ -2517,15 +2519,19 @@ void explodeStdMieru(std::string mieru, Proxy &node) {
     if (regGetMatch(mieru, R"(^(.*?):(.*?)@(.*)$)", 4, 0, &username, &password, &host))
         return;
 
+    username = urlDecode(username);
+    password = urlDecode(password);
+    host = urlDecode(host);
+    
     // 提取端口（port=多个情况）
     port = getUrlArg(addition, "port");
     if (port.find('-') != std::string::npos) {
         ports = port;
     }
     // 提取协议（多个 protocol）
-    protocol = getUrlArg(addition, "protocol");
+    protocol = urlDecode(getUrlArg(addition, "protocol"));
 
-    multiplexing = getUrlArg(addition, "multiplexing");
+    multiplexing = urlDecode(getUrlArg(addition, "multiplexing"));
     mtu = getUrlArg(addition, "mtu");
 
     if (remarks.empty())
@@ -2558,8 +2564,10 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
     if (strFind(hysteria2, "@")) {
         if (regGetMatch(hysteria2, R"(^(.*?)@(.*)[:](\d+)$)", 4, 0, &password, &add, &port))
             return;
+        password = urlDecode(password);
+        add = urlDecode(add);
     } else {
-        password = getUrlArg(addition, "password");
+        password = urlDecode(getUrlArg(addition, "password"));
         if (password.empty())
             return;
 
@@ -2568,20 +2576,22 @@ void explodeStdHysteria2(std::string hysteria2, Proxy &node) {
 
         if (regGetMatch(hysteria2, R"(^(.*)[:](\d+)$)", 3, 0, &add, &port))
             return;
+        add = urlDecode(add);
     }
 
     scv = getUrlArg(addition, "insecure");
     up = getUrlArg(addition, "up");
     down = getUrlArg(addition, "down");
-    alpn = getUrlArg(addition, "alpn");
-    obfsParam = getUrlArg(addition, "obfs");
-    obfsPassword = getUrlArg(addition, "obfs-password");
-    host = getUrlArg(addition, "sni");
-    sni = getUrlArg(addition, "sni");
+    alpn = urlDecode(getUrlArg(addition, "alpn"));
+    obfsParam = urlDecode(getUrlArg(addition, "obfs"));
+    obfsPassword = urlDecode(getUrlArg(addition, "obfs-password"));
+    host = urlDecode(getUrlArg(addition, "sni"));
+    sni = urlDecode(getUrlArg(addition, "sni"));
     ports = getUrlArg(addition, "ports");
     if (remarks.empty())
         remarks = add + ":" + port;
 
+    
     hysteria2Construct(node, HYSTERIA2_DEFAULT_GROUP, remarks, add, port, password, host, up, down, alpn, obfsParam,
                        obfsPassword, sni, "", ports, tribool(), tribool(), scv);
     return;
@@ -2604,81 +2614,96 @@ void explodeStdVless(std::string vless, Proxy &node) {
     if (regGetMatch(vless, stdvless_matcher, 5, 0, &id, &add, &port, &addition))
         return;
 
-    tls = getUrlArg(addition, "security");
-    net = getUrlArg(addition, "type");
-    flow = getUrlArg(addition, "flow");
-    pbk = getUrlArg(addition, "pbk");
-    sid = getUrlArg(addition, "sid");
-    encryption = getUrlArg(addition, "encryption");
-    fp = getUrlArg(addition, "fp");
-    std::string packet_encoding = getUrlArg(addition, "packet-encoding");
+    add = urlDecode(add);
+    tls = urlDecode(getUrlArg(addition, "security"));
+    net = urlDecode(getUrlArg(addition, "type"));
+    flow = urlDecode(getUrlArg(addition, "flow"));
+    pbk = urlDecode(getUrlArg(addition, "pbk"));
+    sid = urlDecode(getUrlArg(addition, "sid"));
+    encryption = urlDecode(getUrlArg(addition, "encryption"));
+    fp = urlDecode(getUrlArg(addition, "fp"));
+
+    std::string packet_encoding = urlDecode(getUrlArg(addition, "packet-encoding"));
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        alpnList = split(urlDecode(alpn), ",");
+        // alpnList.push_back(alpn);
     }
     switch (hash_(net)) {
         case "tcp"_hash:
         case "ws"_hash:
-        case "h2"_hash:
-            type = getUrlArg(addition, "headerType");
-            host = getUrlArg(addition, strFind(addition, "sni") ? "sni" : "host");
-            path = getUrlArg(addition, "path");
+        case "h2"_hash: {
+            type = urlDecode(getUrlArg(addition, "headerType"));
+            std::string sni_val = getUrlArg(addition, "sni");
+            host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
+            path = urlDecode(getUrlArg(addition, "path"));
             break;
-        case "xhttp"_hash: // 新增对 type=xhttp 的支持
+        }
+        case "xhttp"_hash: { // 新增对 type=xhttp 的支持
             net = "h2"; // 视为 h2/http2 传输
-            type = getUrlArg(addition, "headerType");
-            host = getUrlArg(addition, strFind(addition, "sni") ? "sni" : "host");
-            path = getUrlArg(addition, "path");
+            type = urlDecode(getUrlArg(addition, "headerType"));
+            std::string sni_val = getUrlArg(addition, "sni");
+            host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
+            path = urlDecode(getUrlArg(addition, "path"));
             break;
-        case "grpc"_hash:
-            host = getUrlArg(addition, "sni");
-            path = getUrlArg(addition, "serviceName");
-            mode = getUrlArg(addition, "mode");
+        }
+        case "grpc"_hash: {
+            host = urlDecode(getUrlArg(addition, "sni"));
+            path = urlDecode(getUrlArg(addition, "serviceName"));
+            mode = urlDecode(getUrlArg(addition, "mode"));
             break;
-        case "quic"_hash:
-            type = getUrlArg(addition, "headerType");
-            host = getUrlArg(addition, strFind(addition, "sni") ? "sni" : "quicSecurity");
-            path = getUrlArg(addition, "key");
+        }
+        case "quic"_hash: {
+            type = urlDecode(getUrlArg(addition, "headerType"));
+            std::string sni_val = getUrlArg(addition, "sni");
+            host = urlDecode(sni_val.empty() ? getUrlArg(addition, "quicSecurity") : sni_val);
+            path = urlDecode(getUrlArg(addition, "key"));
             break;
+        }
         default:
             return;
     }
 
     if (remarks.empty())
         remarks = add + ":" + port;
-    sni = getUrlArg(addition, "sni");
+    sni = urlDecode(getUrlArg(addition, "sni"));
     vlessConstruct(node, XRAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, "auto", flow, mode, path, host, "",
                    tls, pbk, sid, fp, sni, alpnList, packet_encoding, encryption);
     return;
 }
 
+
 void explodeShadowrocket(std::string rocket, Proxy &node) {
-    std::string add, port, type, id, aid, net = "tcp", path, host, tls, cipher, remarks;
+    std::string add, port, type = "none", id, aid, net = "tcp", path, host, tls, cipher, remarks;
     std::string obfs; //for other style of link
     std::string addition;
     rocket = rocket.substr(8);
 
     string_size pos = rocket.find('?');
-    addition = rocket.substr(pos + 1);
-    rocket.erase(pos);
+    if (pos != std::string::npos) {
+        addition = rocket.substr(pos + 1);
+        rocket.erase(pos);
+    }
 
     if (regGetMatch(urlSafeBase64Decode(rocket), "(.*?):(.*)@(.*):(.*)", 5, 0, &cipher, &id, &add, &port))
         return;
+    add = urlDecode(add);
+    id = urlDecode(id);
     if (port == "0")
         return;
     remarks = urlDecode(getUrlArg(addition, "remarks"));
     obfs = getUrlArg(addition, "obfs");
     if (!obfs.empty()) {
-        if (obfs == "websocket") {
+        if (obfs == "websocket" || obfs == "ws") {
             net = "ws";
-            host = getUrlArg(addition, "obfsParam");
-            path = getUrlArg(addition, "path");
+            host = urlDecode(getUrlArg(addition, "obfsParam"));
+            path = urlDecode(getUrlArg(addition, "path"));
         }
     } else {
-        net = getUrlArg(addition, "network");
-        host = getUrlArg(addition, "wsHost");
-        path = getUrlArg(addition, "wspath");
+        net = urlDecode(getUrlArg(addition, "network"));
+        host = urlDecode(getUrlArg(addition, "wsHost"));
+        path = urlDecode(getUrlArg(addition, "wspath"));
     }
     tls = getUrlArg(addition, "tls") == "1" ? "tls" : "";
     aid = getUrlArg(addition, "aid");
@@ -2691,7 +2716,8 @@ void explodeShadowrocket(std::string rocket, Proxy &node) {
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
-        alpnList.push_back(alpn);
+        alpnList = split(urlDecode(alpn), ",");
+        // alpnList.push_back(alpn);
     }
     vmessConstruct(node, V2RAY_DEFAULT_GROUP, remarks, add, port, type, id, aid, net, cipher, path, host, "", tls, "",
                    alpnList);
