@@ -7,18 +7,11 @@ unsigned char toHex(unsigned char x)
     return  x > 9 ? x + 55 : x + 48;
 }
 
-unsigned char fromHex(unsigned char x)
-{
-    unsigned char y;
-    if (x >= 'A' && x <= 'Z')
-        y = x - 'A' + 10;
-    else if (x >= 'a' && x <= 'z')
-        y = x - 'a' + 10;
-    else if (x >= '0' && x <= '9')
-        y = x - '0';
-    else
-        y = x;
-    return y;
+inline unsigned char fromHex(char ch) {  
+    if (ch >= '0' && ch <= '9') return ch - '0';  
+    if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;  
+    if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;  
+    return 0;  
 }
 
 std::string urlEncode(const std::string& str)
@@ -43,31 +36,38 @@ std::string urlEncode(const std::string& str)
     return strTemp;
 }
 
-std::string urlDecode(const std::string& str)
-{
-    std::string strTemp;
-    string_size length = str.length();
-    for (string_size i = 0; i < length; i++)
-    {
-        if (str[i] == '+')
-            strTemp += ' ';
-        else if (str[i] == '%')
-        {
-            if(i + 2 >= length)
-                return strTemp;
-            if(isalnum(str[i + 1]) && isalnum(str[i + 2]))
-            {
-                unsigned char high = fromHex((unsigned char)str[++i]);
-                unsigned char low = fromHex((unsigned char)str[++i]);
-                strTemp += high * 16 + low;
-            }
-            else
-                strTemp += str[i];
-        }
-        else
-            strTemp += str[i];
-    }
-    return strTemp;
+std::string urlDecode(const std::string& str) {  
+    std::string result;  
+    result.reserve(str.length());  
+      
+    size_t length = str.length();  
+    for (size_t i = 0; i < length; i++) {  
+        char c = str[i];  
+          
+        if (c == '+') {  
+            result += ' ';  
+        } else if (c == '%' && i + 2 < length) {  
+            char c1 = str[i + 1];  
+            char c2 = str[i + 2];  
+              
+            // 简化的十六进制检查  
+            bool isHex1 = (c1 >= '0' && c1 <= '9') || (c1 >= 'A' && c1 <= 'F') || (c1 >= 'a' && c1 <= 'f');  
+            bool isHex2 = (c2 >= '0' && c2 <= '9') || (c2 >= 'A' && c2 <= 'F') || (c2 >= 'a' && c2 <= 'f');  
+              
+            if (isHex1 && isHex2) {  
+                result += fromHex(c1) * 16 + fromHex(c2);  
+                i += 2;  
+            } else {  
+                result += '%';  
+            }  
+        } else if (c == '%' && i + 2 >= length) {  
+            result += '%';  
+        } else {  
+            result += c;  
+        }  
+    }  
+      
+    return result;  
 }
 
 std::string joinArguments(const string_multimap &args)
