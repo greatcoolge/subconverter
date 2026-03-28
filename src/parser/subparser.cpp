@@ -2615,15 +2615,15 @@ void explodeStdVless(std::string vless, Proxy &node) {
         return;
 
     add = urlDecode(add);
-    tls = urlDecode(getUrlArg(addition, "security"));
-    net = urlDecode(getUrlArg(addition, "type"));
-    flow = urlDecode(getUrlArg(addition, "flow"));
-    pbk = urlDecode(getUrlArg(addition, "pbk"));
+    tls = getUrlArg(addition, "security");
+    net = getUrlArg(addition, "type");
+    flow = getUrlArg(addition, "flow");
+    pbk = getUrlArg(addition, "pbk");
     sid = urlDecode(getUrlArg(addition, "sid"));
     encryption = urlDecode(getUrlArg(addition, "encryption"));
-    fp = urlDecode(getUrlArg(addition, "fp"));
+    fp = getUrlArg(addition, "fp");
 
-    std::string packet_encoding = urlDecode(getUrlArg(addition, "packet-encoding"));
+    std::string packet_encoding = getUrlArg(addition, "packet-encoding");
     std::string alpn = getUrlArg(addition, "alpn");
     std::vector<std::string> alpnList;
     if (!alpn.empty()) {
@@ -2634,7 +2634,7 @@ void explodeStdVless(std::string vless, Proxy &node) {
         case "tcp"_hash:
         case "ws"_hash:
         case "h2"_hash: {
-            type = urlDecode(getUrlArg(addition, "headerType"));
+            type = getUrlArg(addition, "headerType");
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
             path = urlDecode(getUrlArg(addition, "path"));
@@ -2642,7 +2642,7 @@ void explodeStdVless(std::string vless, Proxy &node) {
         }
         case "xhttp"_hash: { // 新增对 type=xhttp 的支持
             net = "h2"; // 视为 h2/http2 传输
-            type = urlDecode(getUrlArg(addition, "headerType"));
+            type = getUrlArg(addition, "headerType");
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
             path = urlDecode(getUrlArg(addition, "path"));
@@ -2655,7 +2655,7 @@ void explodeStdVless(std::string vless, Proxy &node) {
             break;
         }
         case "quic"_hash: {
-            type = urlDecode(getUrlArg(addition, "headerType"));
+            type = getUrlArg(addition, "headerType");
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "quicSecurity") : sni_val);
             path = urlDecode(getUrlArg(addition, "key"));
