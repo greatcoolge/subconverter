@@ -2641,7 +2641,7 @@ void explodeStdVless(std::string vless, Proxy &node) {
             break;
         }
         case "xhttp"_hash: { // 新增对 type=xhttp 的支持
-            net = "h2"; // 视为 h2/http2 传输
+            // net = "h2"; // 视为 h2/http2 传输
             type = getUrlArg(addition, "headerType");
             std::string sni_val = getUrlArg(addition, "sni");
             host = urlDecode(sni_val.empty() ? getUrlArg(addition, "host") : sni_val);
